@@ -1,0 +1,18 @@
+[submodule "optparse"]
+	path = optparse
+	url = git@github.com:jgabaut/optparse.git
+[submodule "koliseo"]
+	path = koliseo
+	url = git@github.com:jgabaut/koliseo.git
+[submodule "komando"]
+	path = komando
+	url = git@github.com:jgabaut/komando.git
+[submodule "spuro"]
+	path = spuro
+	url = git@github.com:jgabaut/spuro.git
+[submodule "tomlc17"]
+	path = tomlc17
+	url = git@github.com:cktan/tomlc17.git
+[submodule "supozi"]
+	path = supozi
+	url = git@github.com:jgabaut/supozi.git

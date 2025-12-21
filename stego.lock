@@ -1,0 +1,21 @@
+[build]
+
+source = "main.c"
+
+bin = "canvil"
+
+makevers = "0.0.0"
+
+automakevers = "0.0.0"
+
+tests = "tests"
+
+[tests]
+
+testsdir = "ok"
+
+errortestsdir = "errors"
+
+[versions]
+
+"0.0.0" = "canvil"
