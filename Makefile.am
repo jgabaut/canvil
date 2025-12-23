@@ -14,6 +14,9 @@ AM_CFLAGS +=
 else
 AM_LDFLAGS += -s
 endif
+if NOGIT_BUILD
+AM_CFLAGS += -DCANVIL_NOGIT2
+endif
 
 koliseo/src:
 	@echo -e "Generating ./koliseo/src"

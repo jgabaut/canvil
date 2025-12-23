@@ -69,6 +69,7 @@ static char* canvil_fmt_targetpath(const char* targetdir_optarg, const char* tag
 
 #ifndef _WIN32
 
+#ifndef CANVIL_NOGIT2
 int canvil_submodule_callback(git_submodule *submodule, const char *name, void *payload) {
     git_repository *repo = (git_repository *)payload;
     (void)repo;
@@ -177,6 +178,34 @@ static inline bool canvil_restore_previous_branch(git_repository *repo, git_refe
     printf("Switched back to previous commit.\n");
     return true;
 }
+#else
+static inline bool canvil_checkout_tag(const char *tag_name) {
+    const char* cmd_args[4] = {
+        [0] = "git",
+        [1] = "checkout",
+        [2] = tag_name,
+        [3] = NULL,
+    };
+    Koliseo* k = kls_new(KLS_DEFAULT_SIZE);
+    Koliseo_Temp* kls_t = kls_temp_start(k);
+    Komando cmd = new_command_kls_t(3, cmd_args, kls_t);
+    bool run_res = run_command(cmd);
+    kls_free(k);
+    return run_res;
+}
+static inline bool canvil_restore_previous_branch(void) {
+    const char* cmd_args[2] = {
+        [0] = "git switch -",
+        [1] = NULL,
+    };
+    Koliseo* k = kls_new(KLS_DEFAULT_SIZE);
+    Koliseo_Temp* kls_t = kls_temp_start(k);
+    Komando cmd = new_shell_command_kls_t(1, cmd_args, kls_t);
+    bool run_res = run_command(cmd);
+    kls_free(k);
+    return run_res;
+}
+#endif // CANVIL_NOGIT2
 #endif // _WIN32
 
 int canvil_handle_singlefile_build(const char* targetdir_optarg, const char* builds_dir_optarg, const char* bin_optarg, const char* source_optarg, const char* tag, const char* cflags_optarg, Spuro logger, Koliseo_Temp* kls_t)
@@ -322,7 +351,6 @@ bool canvil_op_build(bool git_mode, bool force, bool no_rebuild, bool use_config
 {
     assert(kls != NULL);
 
-    const char* repo_path = ".";
     Koliseo_Temp* k_tmp_check = kls_temp_start(kls);
 
     if (!canvil_check_tagpath_create(targetdir_optarg, tagname, k_tmp_check)) {
@@ -355,12 +383,16 @@ bool canvil_op_build(bool git_mode, bool force, bool no_rebuild, bool use_config
         }
         spr_logf_to(logger, SPR_INFO, "Building {%s}", target_file_path);
 
+#ifndef CANVIL_NOGIT2
         git_repository *repo = NULL;
         git_reference *previous_head = NULL;
+#endif // CANVIL_NOGIT2
         if (git_mode) {
             spr_logf_to(logger, SPR_INFO, "Switching to {%s}", tagname);
+#ifndef CANVIL_NOGIT2
             git_libgit2_init(); // Initialize libgit2
 
+            const char* repo_path = ".";
             int error = git_repository_open_ext(&repo, repo_path, 0, NULL);
             if (error != 0) {
                 spr_logf_to(logger, SPR_ERROR, "Failed to open repository at '%s'.\n", repo_path);
@@ -378,6 +410,11 @@ bool canvil_op_build(bool git_mode, bool force, bool no_rebuild, bool use_config
                 git_libgit2_shutdown(); // Shutdown libgit2
                 return res;
             }
+#else
+            if (!canvil_checkout_tag(tagname)) {
+                return false;
+            }
+#endif // CANVIL_NOGIT2
         }
 
         int make_res = -1;
@@ -435,6 +472,7 @@ bool canvil_op_build(bool git_mode, bool force, bool no_rebuild, bool use_config
 
 
         if (git_mode) spr_logf_to(logger, SPR_INFO, "Switching back");
+#ifndef CANVIL_NOGIT2
         if (git_mode && !canvil_restore_previous_branch(repo, previous_head)) {
             spr_logf_to(logger, SPR_ERROR, "Failed switchback from {%s}", tagname);
             kls_temp_end(k_tmp);
@@ -443,12 +481,21 @@ bool canvil_op_build(bool git_mode, bool force, bool no_rebuild, bool use_config
             return res;
         }
         if (git_mode) git_repository_free(repo);
+#else
+        if(git_mode && !canvil_restore_previous_branch()) {
+            spr_logf_to(logger, SPR_ERROR, "Failed switchback from {%s}", tagname);
+            kls_temp_end(k_tmp);
+            return res;
+        }
+#endif // CANVIL_NOGIT2
     } else {
         spr_logf_to(logger, SPR_ERROR, "{%s} exists already.", target_file_path);
     }
 
     kls_temp_end(k_tmp);
+#ifndef CANVIL_NOGIT2
     if (git_mode) git_libgit2_shutdown(); // Shutdown libgit2
+#endif // CANVIL_NOGIT2
     return res;
 }
 

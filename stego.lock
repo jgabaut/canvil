@@ -18,4 +18,4 @@ errortestsdir = "errors"
 
 [versions]
 
-"0.0.0" = "canvil"
+"0.1.0" = "canvil"
