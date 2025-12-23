@@ -22,7 +22,9 @@
 #include <ctype.h>
 
 #ifndef _WIN32
+#ifndef CANVIL_NOGIT2
 #include <git2.h>
+#endif // CANVIL_NOGIT2
 #endif
 
 #include "canvil_core.h"

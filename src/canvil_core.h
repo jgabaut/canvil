@@ -20,11 +20,13 @@
 
 #define CANVIL_MAJOR 0
 #define CANVIL_MINOR 1
-#define CANVIL_PATCH 0
+#define CANVIL_PATCH 1
 
 #define EXPECTED_AMBOSO_API_LEVEL "2.1.0"
 
+#ifndef _WIN32
 #include <regex.h>
+#endif // _WIN32
 #include "../koliseo/src/koliseo.h"
 #include "canvil_log.h"
 #include <inttypes.h>
@@ -135,7 +137,7 @@ static const int CANVIL_API_VERSION_INT =
 /**
  * Defines current API version string.
  */
-static const char CANVIL_API_VERSION_STRING[] = "0.1.0"; /**< Represents current version with MAJOR.MINOR.PATCH format.*/
+static const char CANVIL_API_VERSION_STRING[] = "0.1.1"; /**< Represents current version with MAJOR.MINOR.PATCH format.*/
 
 /**
  * Defines current OS string.

@@ -33,10 +33,58 @@ void canvil_help(char* progname)
     printf("Options:\n  -D, --amboso-dir <BIN_DIR>         Specify the directory to host tags [default: ./bin]\n  -I, --builds-dir <BUILDS_DIR>      Specify the directory to host build [default: .]\n  -O, --stego-dir <STEGO_DIR>        Specify the directory to host stego.lock file [default: wd, BIN_DIR]\n  -K, --kazoj-dir <TESTS_DIR>        Specify the directory to host tests\n  -S, --source <SOURCE_NAME>         Specify the source name\n  -E, --execname <EXEC_NAME>         Specify the target executable name\n  -M, --maketag <MAKE_MINTAG>        Specify min tag using make as build/clean step\n  -a, --anvil-version <AMBOSO_VERS>  Specify amboso version to use\n  -k, --anvil-kern <AMBOSO_KERN>     Specify amboso kern to use\n  -G, --gen-c-header <C_HEADER_DIR>  Generate anvil C header for passed dir\n  -x, --linter <LINT_TARGET>         Act as stego linter for passed file\n  -T, --test                         Specify test mode\n  -B, --base                         Specify base mode\n  -g, --git                          Specify git mode\n  -t, --testmacro                    Specify test macro mode\n  -i, --init                         Build all tags for current mode\n  -p, --purge                        Delete binaries for all tags for current mode\n  -d, --delete                       Delete binary for passed tag\n  -b, --build                        Build binary for passed tag\n  -r, --run                          Run binary for passed tag\n  -l, --list                         Print supported tags for current mode\n  -L, --list-all                     Print supported tags for all modes\n  -q, --quiet                        Less output\n  -s, --silent                       Almost no output\n  -V, --verbose <VERBOSE>            More output [default: 3]\n  -w, --watch                        Report timer\n  -v, --version                      Print current version and quit\n  -W, --warranty                     Print warranty info and quit\n  -X, --no-gitcheck                  Ignore git mode checks\n  -J, --logged                       Output to log file\n  -P, --no-color                     Disable color output\n  -F, --force                        Enable force build\n  -R, --no-rebuild                   Disable calling make rebuild\n  -C, --config <CONFIG_ARG>          Pass configuration argument\n  -Z, --cflags <CFLAGS>              Pass CFLAGS for single file mode\n  -e, --strict                       Turn off extensions to 2.0\n  -h, --help                         Print help\n");
 }
 
+#ifdef CANVIL_NOGIT2
+int canvil_nogit_status(void){
+    /*
+    const char* cmd_args[2] = {
+        [0] = "git status",
+        [1] = NULL,
+    };
+    Koliseo* k = kls_new(KLS_DEFAULT_SIZE);
+    Koliseo_Temp* kls_t = kls_temp_start(k);
+    Komando cmd = new_shell_command_kls_t(1, cmd_args, kls_t);
+    bool run_res = run_command(cmd);
+    kls_free(k);
+    */
+
+#ifndef _WIN32
+    FILE *fp = popen("git status --untracked-files=no --porcelain", "r");
+#else
+    FILE *fp = _popen("git status --untracked-files=no --porcelain", "r");
+#endif // _WIN32
+
+    int c = fgetc(fp);
+    bool has_output = false;
+
+    if (c == EOF) {
+        return 0;
+    } else {
+        has_output = true;
+        putchar(c);
+        while ((c = fgetc(fp)) != EOF) {
+            putchar(c);
+        }
+    }
+
+#ifndef _WIN32
+    int status = pclose(fp);
+#else
+    int status = _pclose(fp);
+#endif // _WIN32
+
+    if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+        return has_output && WEXITSTATUS(status);
+    }
+    return has_output;
+}
+#endif // CANVIL_NOGIT2
+
 int has_uncommitted_changes(const char *repo_path) {
 #ifdef _WIN32
     return -1;
 #else
+    int has_changes = 0;
+#ifndef CANVIL_NOGIT2
     git_repository *repo = NULL;
     int error = git_repository_open_ext(&repo, repo_path, 0, NULL);
     if (error != 0) {
@@ -44,7 +92,6 @@ int has_uncommitted_changes(const char *repo_path) {
         return -1; // Return an error code
     }
 
-    int has_changes = 0;
 
     // Iterate over the status of the repository
     git_status_options options = GIT_STATUS_OPTIONS_INIT;
@@ -70,6 +117,9 @@ int has_uncommitted_changes(const char *repo_path) {
 
     git_status_list_free(status_list);
     git_repository_free(repo);
+#else
+    has_changes = canvil_nogit_status();
+#endif // CANVIL_NOGIT2
 
     return has_changes;
 #endif
@@ -80,18 +130,22 @@ int check_path_is_clean_repo(const char* path, Anvil_Args args, Spuro logger)
 #ifdef _WIN32
     return -1;
 #else
+    int res = -1;
+#ifndef CANVIL_NOGIT2
     git_libgit2_init(); // Initialize libgit2
 
     // Check if the given path is a repository
     git_repository *repo = NULL;
     int error = git_repository_open_ext(&repo, path, 0, NULL);
-    int res = -1;
     if (error == 0) {
         spr_logf_to(logger, SPR_DEBUG, "The path '%s' is a Git repository.", path);
 
         // Get repository information
         const char *repo_path = git_repository_path(repo);
         spr_logf_to(logger, SPR_DEBUG, "Repository root path: %s", repo_path);
+#else
+        const char* repo_path = path;
+#endif // CANVIL_NOGIT2
 
         // Check for uncommitted changes
         int changes = has_uncommitted_changes(repo_path);
@@ -105,6 +159,7 @@ int check_path_is_clean_repo(const char* path, Anvil_Args args, Spuro logger)
             res = 0;
         }
 
+#ifndef CANVIL_NOGIT2
         // Free the repository object
         git_repository_free(repo);
     } else {
@@ -118,8 +173,8 @@ int check_path_is_clean_repo(const char* path, Anvil_Args args, Spuro logger)
             spr_logf_to(logger, SPR_ERROR, "The path '%s' is not a Git repository or an error occurred.", path);
         }
     }
-
     git_libgit2_shutdown(); // Shutdown libgit2
+#endif // CANVIL_NOGIT2
 
     return res;
 #endif // _WIN32
@@ -1299,6 +1354,7 @@ int canvil_check_passed_args(Anvil_Args* canvil_args, Anvil_Env* canvil_env, Anv
     return 0;
 }
 
+#ifndef CANVIL_NOGIT2
 /**
  * Returns the escaped version of passed C string, requesting memory from the passed Koliseo.
  * From https://stackoverflow.com/questions/3201451/how-to-convert-a-c-string-into-its-escaped-version-in-c
@@ -1329,6 +1385,7 @@ static char* canvil_escape_str_kls(Koliseo* kls, const char* cstr)
     *ptr = '\0';
     return dest;
 }
+#endif // CANVIL_NOGIT2
 
 bool canvil_gen_header(const char* target_dir, const char* anvil_kern, const char* tag, const char* bin_name, Spuro logger, Koliseo* kls) {
 #ifdef _WIN32
@@ -1337,6 +1394,9 @@ bool canvil_gen_header(const char* target_dir, const char* anvil_kern, const cha
     assert(target_dir != NULL);
     assert(tag != NULL);
     assert(bin_name != NULL);
+
+    char sha1_oid[41]; // Buffer for formatted SHA1
+    int64_t commit_time = -1;
 
     // We prepare the reference name to lookup
     // If we were looking for "HEAD", this part would not be necessary
@@ -1351,12 +1411,13 @@ bool canvil_gen_header(const char* target_dir, const char* anvil_kern, const cha
         sprintf(tag_str, "refs/tags/%s", tag);
     }
 
+    bool res = true;
+#ifndef CANVIL_NOGIT2
     git_libgit2_init(); // Initialize libgit2
 
     // Check if the given path is a repository
     git_repository *repo = NULL;
     int error = git_repository_open_ext(&repo, target_dir, 0, NULL);
-    bool res = true;
     if (error == 0) {
         printf("The path '%s' is a Git repository.\n", target_dir);
 
@@ -1371,7 +1432,6 @@ bool canvil_gen_header(const char* target_dir, const char* anvil_kern, const cha
         git_oid oid_parent_commit; // The SHA1 for tag commit
         const git_signature* signature; // Signature of tag commit
         const char* commit_msg; // Message of tag commit
-        char sha1_oid[41]; // Buffer for formatted SHA1
 
         //const char* head_str = "HEAD";
 
@@ -1423,8 +1483,17 @@ bool canvil_gen_header(const char* target_dir, const char* anvil_kern, const cha
 
                 char* commit_msg_escaped = canvil_escape_str_kls(kls, commit_msg_stripped);
 
-                git_time_t commit_time = git_commit_time(commit);
+                commit_time = git_commit_time(commit);
                 spr_logf_to(logger, SPR_INFO, "Tag commit time: {%i}", commit_time);
+#else
+    struct Canvil_Signature {
+        const char* name;
+    } sign = {
+        .name = "Foo",
+    };
+    struct Canvil_Signature* signature = &sign;
+    char* commit_msg_escaped = "Foo";
+#endif // CANVIL_NOGIT2
 
                 if (!strcmp(anvil_kern, "amboso-C")) {
                     char header_path[FILENAME_MAX] = {0};
@@ -1503,6 +1572,7 @@ bool canvil_gen_header(const char* target_dir, const char* anvil_kern, const cha
                     spr_logf_to(logger, SPR_ERROR, "Unexpected anvil_kern: {%s}", anvil_kern);
                     res = false;
                 }
+#ifndef CANVIL_NOGIT2
                 git_commit_free(commit);
             }
         } else {
@@ -1517,6 +1587,7 @@ bool canvil_gen_header(const char* target_dir, const char* anvil_kern, const cha
     }
 
     git_libgit2_shutdown(); // Shutdown libgit2
+#endif // CANVIL_NOGIT2
 
     return res;
 #endif
@@ -1594,6 +1665,7 @@ bool canvil_init_project(const char* target_name, const char* anvil_kern, const 
         }
     }
 
+#ifndef CANVIL_NOGIT2
     git_libgit2_init();
 
     git_repository *repo = NULL;
@@ -1659,6 +1731,7 @@ bool canvil_init_project(const char* target_name, const char* anvil_kern, const 
     }
     git_repository_free(repo);
     git_libgit2_shutdown();
+#endif // CANVIL_NOGIT2
 
     char target_name_nodashes[FILENAME_MAX] = {0};
     dashes_to_underscore_copy(target_name, target_name_nodashes, sizeof(target_name_nodashes));
