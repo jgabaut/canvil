@@ -1533,6 +1533,48 @@ bool canvil_gen_header(const char* target_dir, const char* anvil_kern, const cha
         spr_logf_to(logger, SPR_ERROR, "Git command for commit time failed");
         return false;
     }
+
+    char hash_buf[FILENAME_MAX] = {0};
+    git_cmd_str = "git show -q --clear-decorations --format=\"%%H\" %s";
+    if (strlen(tag_str) > (FILENAME_MAX - strlen(git_cmd_str))) {
+        spr_logf_to(logger, SPR_ERROR, "Tag name is too long");
+        return false;
+    }
+    sprintf(hash_buf, git_cmd_str, tag_str);
+#ifndef _WIN32
+    fp = popen(hash_buf, "r");
+#else
+    fp = _popen(hash_buf, "r");
+#endif // _WIN32
+
+    c = fgetc(fp);
+    if (c == EOF) {
+        spr_logf_to(logger, SPR_ERROR, "Can't get commit hash");
+#ifndef _WIN32
+        pclose(fp);
+#else
+        _pclose(fp);
+#endif // _WIN32
+        return false;
+    } else {
+        for (int pos=0; pos < FILENAME_MAX && c != EOF; pos++) {
+            hash_buf[pos] = c;
+            c = fgetc(fp);
+        }
+        strncpy(sha1_oid, hash_buf, sizeof(sha1_oid));
+        sha1_oid[40] = '\0';
+    }
+
+#ifndef _WIN32
+    status = pclose(fp);
+#else
+    status = _pclose(fp);
+#endif // _WIN32
+
+    if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+        spr_logf_to(logger, SPR_ERROR, "Git command for commit hash failed");
+        return false;
+    }
 #endif // CANVIL_NOGIT2
 
                 if (!strcmp(anvil_kern, "amboso-C")) {
