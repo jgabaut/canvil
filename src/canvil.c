@@ -1493,6 +1493,46 @@ bool canvil_gen_header(const char* target_dir, const char* anvil_kern, const cha
     };
     struct Canvil_Signature* signature = &sign;
     char* commit_msg_escaped = "Foo";
+    char time_buf[FILENAME_MAX] = {0};
+    char* git_cmd_str = "git show -q --clear-decorations --format=\"%%at\" %s";
+    if (strlen(tag_str) > (FILENAME_MAX - strlen(git_cmd_str))) {
+        spr_logf_to(logger, SPR_ERROR, "Tag name is too long");
+        return false;
+    }
+    sprintf(time_buf, git_cmd_str, tag_str);
+#ifndef _WIN32
+    FILE *fp = popen(time_buf, "r");
+#else
+    FILE *fp = _popen(time_buf, "r");
+#endif // _WIN32
+
+    int c = fgetc(fp);
+    if (c == EOF) {
+        spr_logf_to(logger, SPR_ERROR, "Can't get commit time");
+#ifndef _WIN32
+        pclose(fp);
+#else
+        _pclose(fp);
+#endif // _WIN32
+        return false;
+    } else {
+        for (int pos=0; pos < FILENAME_MAX && c != EOF; pos++) {
+            time_buf[pos] = c;
+            c = fgetc(fp);
+        }
+        commit_time = atoi(time_buf);
+    }
+
+#ifndef _WIN32
+    int status = pclose(fp);
+#else
+    int status = _pclose(fp);
+#endif // _WIN32
+
+    if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+        spr_logf_to(logger, SPR_ERROR, "Git command for commit time failed");
+        return false;
+    }
 #endif // CANVIL_NOGIT2
 
                 if (!strcmp(anvil_kern, "amboso-C")) {
