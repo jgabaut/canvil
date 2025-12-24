@@ -399,7 +399,7 @@ bool canvil_op_build(bool git_mode, bool force, bool no_rebuild, bool use_config
                 git_libgit2_shutdown(); // Shutdown libgit2
                 return res;
             }
-            const char *repo_path = git_repository_path(repo);
+            repo_path = git_repository_path(repo);
             spr_tlogf_to(logger, SPR_INFO, "Repository root path: %s", repo_path);
 
             previous_head = canvil_checkout_tag(repo, tagname);
