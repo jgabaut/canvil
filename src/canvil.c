@@ -1946,13 +1946,13 @@ bool canvil_init_project(const char* target_name, const char* anvil_kern, const 
         spr_logf_to(logger, SPR_ERROR, "Failed git submodule add https://github.com/jgabaut/amboso.git");
     }
 
-    cd_args = {
+    const char* cd_back_args[3] = {
         [0] = "cd",
         [1] = "-",
         [2] = NULL,
     };
     kls_t = kls_temp_start(kls);
-    cmd = new_command_kls_t(2, cd_args, kls_t);
+    cmd = new_command_kls_t(2, cd_back_args, kls_t);
     run_res = run_command(cmd);
     kls_temp_end(kls_t);
 
