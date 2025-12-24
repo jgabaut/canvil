@@ -1354,7 +1354,6 @@ int canvil_check_passed_args(Anvil_Args* canvil_args, Anvil_Env* canvil_env, Anv
     return 0;
 }
 
-#ifndef CANVIL_NOGIT2
 /**
  * Returns the escaped version of passed C string, requesting memory from the passed Koliseo.
  * From https://stackoverflow.com/questions/3201451/how-to-convert-a-c-string-into-its-escaped-version-in-c
@@ -1385,7 +1384,6 @@ static char* canvil_escape_str_kls(Koliseo* kls, const char* cstr)
     *ptr = '\0';
     return dest;
 }
-#endif // CANVIL_NOGIT2
 
 bool canvil_gen_header(const char* target_dir, const char* anvil_kern, const char* tag, const char* bin_name, Spuro logger, Koliseo* kls) {
 #ifdef _WIN32
@@ -1616,6 +1614,49 @@ bool canvil_gen_header(const char* target_dir, const char* anvil_kern, const cha
 
     if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
         spr_logf_to(logger, SPR_ERROR, "Git command for commit author failed");
+        return false;
+    }
+
+    char commit_desc_buf[FILENAME_MAX] = {0};
+    git_cmd_str = "git show -q --clear-decorations --format=\"%%s\" %s";
+    if (strlen(tag_str) > (FILENAME_MAX - strlen(git_cmd_str))) {
+        spr_logf_to(logger, SPR_ERROR, "Tag name is too long");
+        return false;
+    }
+    sprintf(commit_desc_buf, git_cmd_str, tag_str);
+#ifndef _WIN32
+    fp = popen(commit_desc_buf, "r");
+#else
+    fp = _popen(commit_desc_buf, "r");
+#endif // _WIN32
+
+    c = fgetc(fp);
+    if (c == EOF) {
+        spr_logf_to(logger, SPR_ERROR, "Can't get commit desc");
+#ifndef _WIN32
+        pclose(fp);
+#else
+        _pclose(fp);
+#endif // _WIN32
+        return false;
+    } else {
+        memset(commit_desc_buf, 0, sizeof(author_buf));
+        for (int pos=0; pos < FILENAME_MAX && c != EOF; pos++) {
+            commit_desc_buf[pos] = c;
+            c = fgetc(fp);
+        }
+        commit_desc_buf[strlen(commit_desc_buf)-1] = '\0';
+        commit_msg_escaped = canvil_escape_str_kls(kls, commit_desc_buf);
+    }
+
+#ifndef _WIN32
+    status = pclose(fp);
+#else
+    status = _pclose(fp);
+#endif // _WIN32
+
+    if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+        spr_logf_to(logger, SPR_ERROR, "Git command for commit desc failed");
         return false;
     }
 #endif // CANVIL_NOGIT2
