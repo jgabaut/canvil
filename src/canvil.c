@@ -1897,6 +1897,69 @@ bool canvil_init_project(const char* target_name, const char* anvil_kern, const 
     }
     git_repository_free(repo);
     git_libgit2_shutdown();
+#else
+    const char* cmd_args[4] = {
+        [0] = "git",
+        [1] = "init",
+        [2] = target_name,
+        [3] = NULL,
+    };
+    Koliseo_Temp* kls_t = kls_temp_start(kls);
+    Komando cmd = new_command_kls_t(3, cmd_args, kls_t);
+    bool run_res = run_command(cmd);
+    kls_temp_end(kls_t);
+
+    if (!run_res) {
+        spr_logf_to(logger, SPR_ERROR, "Failed git init %s", target_name);
+        return false;
+    }
+
+    const char* cd_args[3] = {
+        [0] = "cd",
+        [1] = target_name,
+        [2] = NULL,
+    };
+    kls_t = kls_temp_start(kls);
+    cmd = new_command_kls_t(3, cd_args, kls_t);
+    run_res = run_command(cmd);
+    kls_temp_end(kls_t);
+
+    if (!run_res) {
+        spr_logf_to(logger, SPR_ERROR, "Failed cd %s", target_name);
+        return false;
+    }
+
+    const char* submod_args[5] = {
+        [0] = "git",
+        [1] = "submodule",
+        [2] = "add",
+        [3] = "https://github.com/jgabaut/amboso.git",
+        [4] = NULL,
+    };
+
+    kls_t = kls_temp_start(kls);
+    cmd = new_command_kls_t(3, submod_args, kls_t);
+    run_res = run_command(cmd);
+    kls_temp_end(kls_t);
+
+    if (!run_res) {
+        spr_logf_to(logger, SPR_ERROR, "Failed git submodule add https://github.com/jgabaut/amboso.git");
+    }
+
+    cd_args = {
+        [0] = "cd",
+        [1] = "-",
+        [2] = NULL,
+    };
+    kls_t = kls_temp_start(kls);
+    cmd = new_command_kls_t(2, cd_args, kls_t);
+    run_res = run_command(cmd);
+    kls_temp_end(kls_t);
+
+    if (!run_res) {
+        spr_logf_to(logger, SPR_ERROR, "Failed cd -");
+        return false;
+    }
 #endif // CANVIL_NOGIT2
 
     char target_name_nodashes[FILENAME_MAX] = {0};
@@ -1906,7 +1969,7 @@ bool canvil_init_project(const char* target_name, const char* anvil_kern, const 
         char target[FILENAME_MAX] = {0};
         char linkpath[FILENAME_MAX] = {0};
 
-        sprintf(target, "amboso/amboso");
+        sprintf(target, "%s/amboso/amboso", target_name);
         sprintf(linkpath, "%s/anvil", target_name);
 
         int result = symlink(target, linkpath);
