@@ -17,6 +17,8 @@
 */
 #include "canvil.h"
 #include "canvil_optparse.h"
+#define DUMBTIMER_IMPLEMENTATION
+#include "../dumbtimer/dumbtimer.h"
 #include <dirent.h>
 
 void canvil_usage(char* progname)
