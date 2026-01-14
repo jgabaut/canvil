@@ -30,7 +30,6 @@
 #include "canvil_core.h"
 #include "canvil_op.h"
 #include "canvil_toml.h"
-#include "../supozi/supozi.h"
 
 int canvil_main(int argc, char** argv, Koliseo* default_kls);
 int canvil_check_passed_args(Anvil_Args* canvil_args, Anvil_Env* canvil_env, AnvilPy_Env canvil_py_env, char** argv, size_t argc, Spuro logger, Koliseo* kls);

@@ -16,8 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #include "canvil_op.h"
-#define SPZ_IMPLEMENTATION
-#include "../supozi/supozi.h"
 
 static bool canvil_check_tagpath(const char* targetdir_optarg, const char* tagname, Koliseo_Temp* t_kls)
 {
