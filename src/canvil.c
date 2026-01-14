@@ -1,7 +1,7 @@
 // jgabaut @ github.com/jgabaut
 // SPDX-License-Identifier: GPL-3.0-only
 /*
-    Copyright (C) 2024 jgabaut
+    Copyright (C) 2024-2026 jgabaut
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -727,7 +727,7 @@ int canvil_main(int argc, char** argv, Koliseo* default_kls)
         return 0;
     }
 
-    printf("%s, version %s\nCopyright (C) 2024  jgabaut\n\n  This program comes with ABSOLUTELY NO WARRANTY; for details type `%s -W`.\n  This is free software, and you are welcome to redistribute it\n  under certain conditions; see file `LICENSE` for details.\n\n  Full source is available at https://github.com/jgabaut/canvil\n", argv[0], CANVIL_API_VERSION_STRING, argv[0]);
+    printf("%s, version %s\nCopyright (C) 2024-2026  jgabaut\n\n  This program comes with ABSOLUTELY NO WARRANTY; for details type `%s -W`.\n  This is free software, and you are welcome to redistribute it\n  under certain conditions; see file `LICENSE` for details.\n\n  Full source is available at https://github.com/jgabaut/canvil\n", argv[0], CANVIL_API_VERSION_STRING, argv[0]);
 
     if (canvil_args.warranty == 1) {
         printf("\n  %s\n\n", "THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY\n  APPLICABLE LAW.  EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT\n  HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM \"AS IS\" WITHOUT WARRANTY\n  OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO,\n  THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR\n  PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM\n  IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF\n  ALL NECESSARY SERVICING, REPAIR OR CORRECTION.");
