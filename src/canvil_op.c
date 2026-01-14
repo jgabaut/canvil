@@ -581,10 +581,16 @@ bool canvil_op_test(Anvil_Args* canvil_args, Canvil_Test query, Spuro logger, Ko
     spr_logtf_to(logger, SPR_DEBUG, "Checking test stdout: {%s}", stdout_name);
     spr_logtf_to(logger, SPR_DEBUG, "Checking test stderr: {%s}", stderr_name);
 
-    int res = -1;
     bool matched = false;
-    spz_run_checked(test_name, &res, &matched, (canvil_args->do_build == 1), stdout_name, stderr_name);
-
+    const char* args[] = {
+        test_name,
+        NULL,
+    };
+    Koliseo_Temp* kls_t = kls_temp_start(kls);
+    Komando kmd = new_command_kls_t(1, args, kls_t);
+    bool res = run_command_checked(kmd, &matched, (canvil_args->do_build == 1), stdout_name, stderr_name);
+    kls_temp_end(kls_t);
+    if (!res) spr_logtf_to(logger, SPR_DEBUG, "Failure on run_command_checked()");
     return (matched);
 }
 int canvil_op_test_macro(Anvil_Args* canvil_args, Canvil_Test_List test_list, Canvil_Test_List errortest_list, Spuro logger, Koliseo* kls)
