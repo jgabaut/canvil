@@ -10,13 +10,13 @@ echo "Host os:  $host_os"
 AC_ARG_ENABLE([debug],  [AS_HELP_STRING([--enable-debug], [Enable debug build])],  [enable_debug=$enableval],  [enable_debug=no])
 AM_CONDITIONAL([DEBUG_BUILD], [test "$enable_debug" = "yes"])
 AC_ARG_ENABLE([nogit],  [AS_HELP_STRING([--enable-nogit], [Enable nogit build])],  [enable_nogit=$enableval],  [enable_nogit=no])
-AM_CONDITIONAL([NOGIT_BUILD], [test "$enable_nogit" = "yes"])
 case "${host_os}" in
 	mingw*)
 		echo "Building for mingw32: [$host_cpu-$host_vendor-$host_os]"
 		build_windows=yes
+        enable_nogit=yes
 		AC_SUBST([CANVIL_CFLAGS], ["-I/usr/x86_64-w64-mingw32/include -static -fstack-protector -DWINDOWS_BUILD"])
-		AC_SUBST([CANVIL_LDFLAGS], ["-L/usr/x86_64-w64-mingw32/lib -L ./tomlc17/src -ltomlc17"])
+		AC_SUBST([CANVIL_LDFLAGS], ["-L/usr/x86_64-w64-mingw32/lib -L ./tomlc17/src -ltomlc17 -larchive -lz -lpcre2-posix -lpcre2-8"])
 		AC_SUBST([CCOMP], ["/usr/bin/x86_64-w64-mingw32-gcc"])
 		AC_SUBST([OS], ["w64-mingw32"])
 		AC_SUBST([TARGET], ["canvil.exe"])
@@ -39,6 +39,7 @@ case "${host_os}" in
 	;;
 esac
 
+AM_CONDITIONAL([NOGIT_BUILD], [test "$enable_nogit" = "yes"])
 AM_CONDITIONAL([DARWIN_BUILD], [test "$build_mac" = "yes"])
 AM_CONDITIONAL([WINDOWS_BUILD], [test "$build_windows" = "yes"])
 AM_CONDITIONAL([LINUX_BUILD], [test "$build_linux" = "yes"])

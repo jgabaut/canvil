@@ -27,7 +27,7 @@ static bool canvil_check_tagpath(const char* targetdir_optarg, const char* tagna
 #ifndef _WIN32
     snprintf(target_tag_path, target_tag_path_len, "%s/v%s/", targetdir_optarg, tagname);
 #else
-    snprintf(target_tag_path, "%s\\v%s\\", targetdir_optarg, tagname);
+    snprintf(target_tag_path, target_tag_path_len, "%s\\v%s\\", targetdir_optarg, tagname);
 #endif // _WIN32
 
     return canvil_check_dir(target_tag_path);
@@ -43,7 +43,7 @@ static bool canvil_check_tagpath_create(const char* targetdir_optarg, const char
 #ifndef _WIN32
     snprintf(target_tag_path, target_tag_path_len, "%s/v%s/", targetdir_optarg, tagname);
 #else
-    snprintf(target_tag_path, "%s\\v%s\\", targetdir_optarg, tagname);
+    snprintf(target_tag_path, target_tag_path_len, "%s\\v%s\\", targetdir_optarg, tagname);
 #endif // _WIN32
 
     return canvil_check_dir_create(target_tag_path);
@@ -59,13 +59,11 @@ static char* canvil_fmt_targetpath(const char* targetdir_optarg, const char* tag
 #ifndef _WIN32
     snprintf(target_file_path, target_file_path_len, "%s/v%s/%s", targetdir_optarg, tagname, bin_optarg);
 #else
-    snprintf(target_file_path, "%s\\v%s\\%s", targetdir_optarg, tagname, bin_optarg);
+    snprintf(target_file_path, target_file_path_len, "%s\\v%s\\%s", targetdir_optarg, tagname, bin_optarg);
 #endif // _WIN32
 
     return target_file_path;
 }
-
-#ifndef _WIN32
 
 #ifndef CANVIL_NOGIT2
 int canvil_submodule_callback(git_submodule *submodule, const char *name, void *payload) {
@@ -204,7 +202,6 @@ static inline bool canvil_restore_previous_branch(void) {
     return run_res;
 }
 #endif // CANVIL_NOGIT2
-#endif // _WIN32
 
 int canvil_handle_singlefile_build(const char* targetdir_optarg, const char* builds_dir_optarg, const char* bin_optarg, const char* source_optarg, const char* tag, const char* cflags_optarg, Spuro logger, Koliseo_Temp* kls_t)
 {

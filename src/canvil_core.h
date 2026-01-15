@@ -26,6 +26,8 @@
 
 #ifndef _WIN32
 #include <regex.h>
+#else
+#include <pcre2posix.h>
 #endif // _WIN32
 #include "../koliseo/src/koliseo.h"
 #include "canvil_log.h"
