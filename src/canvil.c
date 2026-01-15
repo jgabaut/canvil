@@ -74,17 +74,20 @@ int canvil_nogit_status(void){
     int status = _pclose(fp);
 #endif // _WIN32
 
+#ifndef _WIN32
     if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
         return has_output && WEXITSTATUS(status);
     }
+#else
+    if (status != 0) {
+        return has_output && status;
+    }
+#endif // _WIN32
     return has_output;
 }
 #endif // CANVIL_NOGIT2
 
 int has_uncommitted_changes(const char *repo_path) {
-#ifdef _WIN32
-    return -1;
-#else
     int has_changes = 0;
 #ifndef CANVIL_NOGIT2
     git_repository *repo = NULL;
@@ -124,14 +127,10 @@ int has_uncommitted_changes(const char *repo_path) {
 #endif // CANVIL_NOGIT2
 
     return has_changes;
-#endif
 }
 
 int check_path_is_clean_repo(const char* path, Anvil_Args args, Spuro logger)
 {
-#ifdef _WIN32
-    return -1;
-#else
     int res = -1;
 #ifndef CANVIL_NOGIT2
     git_libgit2_init(); // Initialize libgit2
@@ -179,7 +178,6 @@ int check_path_is_clean_repo(const char* path, Anvil_Args args, Spuro logger)
 #endif // CANVIL_NOGIT2
 
     return res;
-#endif // _WIN32
 }
 
 Spuro extra_logger;
@@ -235,24 +233,38 @@ int copy_directory(const char *src, const char *dst) {
     }
 
     // Create destination directory (ignore if already exists)
+#ifndef _WIN32
     mkdir(dst, 0755);
+#else
+    mkdir(dst);
+#endif // _WIN32
 
     struct dirent *entry;
+    Koliseo* kls = kls_new(KLS_DEFAULT_SIZE);
     while ((entry = readdir(dir)) != NULL) {
+        Koliseo_Temp* kls_t = kls_temp_start(kls);
         if (strcmp(entry->d_name, ".") == 0 ||
             strcmp(entry->d_name, "..") == 0) {
+            kls_temp_end(kls_t);
             continue;
         }
 
-        char src_path[PATH_MAX];
-        char dst_path[PATH_MAX];
-        snprintf(src_path, sizeof(src_path), "%s/%s", src, entry->d_name);
-        snprintf(dst_path, sizeof(dst_path), "%s/%s", dst, entry->d_name);
+#ifndef _WIN32
+        char* src_path = KLS_SPRINTF_T(kls_t, "%s/%s", src, entry->d_name);
+#else
+        char* src_path = KLS_SPRINTF_T(kls_t, "%s\\%s", src, entry->d_name);
+#endif // _WIN32
+#ifndef _WIN32
+        char* dst_path = KLS_SPRINTF_T(kls_t, "%s/%s", dst, entry->d_name);
+#else
+        char* dst_path = KLS_SPRINTF_T(kls_t, "%s\\%s", dst, entry->d_name);
+#endif // _WIN32
 
         struct stat st;
         if (stat(src_path, &st) == -1) {
             perror("stat");
             closedir(dir);
+            kls_free(kls);
             return -1;
         }
 
@@ -260,18 +272,22 @@ int copy_directory(const char *src, const char *dst) {
             // Recurse into subdirectory
             if (copy_directory(src_path, dst_path) == -1) {
                 closedir(dir);
+                kls_free(kls);
                 return -1;
             }
         } else if (S_ISREG(st.st_mode)) {
             // Copy file
             if (copy_file(src_path, dst_path) == -1) {
                 closedir(dir);
+                kls_free(kls);
                 return -1;
             }
         }
+        kls_temp_end(kls_t);
     }
 
     closedir(dir);
+    kls_free(kls);
     return 0;
 }
 
@@ -1042,7 +1058,6 @@ int canvil_main(int argc, char** argv, Koliseo* default_kls)
         }
     }
 
-#ifndef _WIN32
     int clean_repo_res = check_path_is_clean_repo(".", canvil_args, logger);
 
     if (clean_repo_res != 0) {
@@ -1054,9 +1069,6 @@ int canvil_main(int argc, char** argv, Koliseo* default_kls)
             spr_clogf_to(logger, SPR_YELLOW, SPR_WARN, "%s", "Ignoring failed git check");
         }
     }
-#else
-    spr_clogf_to(logger, SPR_YELLOW, SPR_WARN, "-X was %s. The Windows build of canvil does not support git check before handling arguments.", (ignore_gitcheck == 1 ? "present" : "not present"));
-#endif
 
     // Handle list flags
     if (canvil_args.list_all == 1) {
@@ -1388,9 +1400,6 @@ static char* canvil_escape_str_kls(Koliseo* kls, const char* cstr)
 }
 
 bool canvil_gen_header(const char* target_dir, const char* anvil_kern, const char* tag, const char* bin_name, Spuro logger, Koliseo* kls) {
-#ifdef _WIN32
-    return false;
-#else
     assert(target_dir != NULL);
     assert(tag != NULL);
     assert(bin_name != NULL);
@@ -1529,10 +1538,17 @@ bool canvil_gen_header(const char* target_dir, const char* anvil_kern, const cha
     int status = _pclose(fp);
 #endif // _WIN32
 
+#ifndef _WIN32
     if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
         spr_logf_to(logger, SPR_ERROR, "Git command for commit time failed");
         return false;
     }
+#else
+    if (status != 0) {
+        spr_logf_to(logger, SPR_ERROR, "Git command for commit time failed");
+        return false;
+    }
+#endif // _WIN32
 
     char hash_buf[FILENAME_MAX] = {0};
     git_cmd_str = "git show -q --clear-decorations --format=\"%%H\" %s";
@@ -1571,10 +1587,17 @@ bool canvil_gen_header(const char* target_dir, const char* anvil_kern, const cha
     status = _pclose(fp);
 #endif // _WIN32
 
+#ifndef _WIN32
     if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
         spr_logf_to(logger, SPR_ERROR, "Git command for commit hash failed");
         return false;
     }
+#else
+    if (status != 0) {
+        spr_logf_to(logger, SPR_ERROR, "Git command for commit hash failed");
+        return false;
+    }
+#endif // _WIN32
 
     char author_buf[FILENAME_MAX] = {0};
     git_cmd_str = "git show -q --clear-decorations --format=\"%%an\" %s";
@@ -1614,10 +1637,17 @@ bool canvil_gen_header(const char* target_dir, const char* anvil_kern, const cha
     status = _pclose(fp);
 #endif // _WIN32
 
+#ifndef _WIN32
     if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
         spr_logf_to(logger, SPR_ERROR, "Git command for commit author failed");
         return false;
     }
+#else
+    if (status != 0) {
+        spr_logf_to(logger, SPR_ERROR, "Git command for commit author failed");
+        return false;
+    }
+#endif // _WIN32
 
     char commit_desc_buf[FILENAME_MAX] = {0};
     git_cmd_str = "git show -q --clear-decorations --format=\"%%s\" %s";
@@ -1657,10 +1687,17 @@ bool canvil_gen_header(const char* target_dir, const char* anvil_kern, const cha
     status = _pclose(fp);
 #endif // _WIN32
 
+#ifndef _WIN32
     if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
         spr_logf_to(logger, SPR_ERROR, "Git command for commit desc failed");
         return false;
     }
+#else
+    if (status != 0) {
+        spr_logf_to(logger, SPR_ERROR, "Git command for commit desc failed");
+        return false;
+    }
+#endif // _WIN32
 #endif // CANVIL_NOGIT2
 
                 if (!strcmp(anvil_kern, "amboso-C")) {
@@ -1719,7 +1756,11 @@ bool canvil_gen_header(const char* target_dir, const char* anvil_kern, const cha
 	                    fprintf(header_fp, "ANVIL__%s__VERSION_DESC = \"%s\" # version description\n", bin_name, sha1_oid);
 	                    fprintf(header_fp, "ANVIL__%s__VERSION_DATE = \"%li\" # version date\n", bin_name, (long)commit_time);
 	                    fprintf(header_fp, "ANVIL__%s__VERSION_AUTHOR = \"%s\" # author\n", bin_name, signature->name);
+#ifndef _WIN32
 	                    fprintf(header_fp, "ANVIL__%s__HEADER_GENTIME = \"%li\" # header generation time\n\n\n", bin_name, (intmax_t) headergen_time);
+#else
+	                    fprintf(header_fp, "ANVIL__%s__HEADER_GENTIME = \"%lli\" # header generation time\n\n\n", bin_name, (intmax_t) headergen_time);
+#endif // _WIN32
                         fprintf(header_fp, "def get_ANVIL_API_LEVEL__() -> str:\n    return ANVIL__API_LEVEL_STRING\n\n");
                         fprintf(header_fp, "def get_ANVIL__VERSION__() -> str:\n    return ANVIL__%s__VERSION_STRING\n\n", bin_name);
                         fprintf(header_fp, "def get_ANVIL__VERSION__DESC__() -> str:\n    return ANVIL__%s__VERSION_DESC\n\n", bin_name);
@@ -1758,7 +1799,6 @@ bool canvil_gen_header(const char* target_dir, const char* anvil_kern, const cha
 #endif // CANVIL_NOGIT2
 
     return res;
-#endif
 }
 
 void to_uppercase_copy(const char *src, char *dest, size_t dest_size) {
@@ -1974,11 +2014,13 @@ bool canvil_init_project(const char* target_name, const char* anvil_kern, const 
         sprintf(target, "%s/amboso/amboso", target_name);
         sprintf(linkpath, "%s/anvil", target_name);
 
+#ifndef _WIN32
         int result = symlink(target, linkpath);
         if (result != 0) {
             spr_logf_to(logger, SPR_ERROR, "Symlink failed");
             return false;
         }
+#endif // _WIN32
 
         char target_name_srcdir[FILENAME_MAX] = {0};
 #ifndef _WIN32
