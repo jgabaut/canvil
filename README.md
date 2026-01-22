@@ -64,8 +64,8 @@ Flags support status:
 - `libarchive` for `anvilPy` kern, to extract `.tar.gz` files
 - `koliseo` for arena allocator
 - `spuro` for logging
-- `supozi` for test mode
-- `komando` for running commands
+- `komando` for running commands and test mode
+- `dumbtimer` for the timer functionality
 
 ## Installing dependencies <a name = "prep"></a>
 
