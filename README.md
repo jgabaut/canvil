@@ -8,6 +8,7 @@
 + [Supported amboso features](#supported_amboso)
 + [Dependencies](#deps)
 + [Installing dependencies](#prep)
++ [Configuration](#config)
 + [Building](#building)
 + [Installing](#installing)
 + [Todo](#todo)
@@ -69,6 +70,8 @@ Flags support status:
 
 ## Installing dependencies <a name = "prep"></a>
 
+You can avoid depending on `git2.h` by using the `-DCANVIL_NOGIT2` macro. See [this section](#config) for more info.
+
 To install `git2.h` and `archive.h`, needed to build:
 
 - On Ubuntu:
@@ -90,10 +93,21 @@ After doing that, you may need to generate the Makefile for koliseo:
   cd -
 ```
 
-Now you should be ready to generate the actual Makefile (for the root dir):
-```sh
-  aclocal; autoconf; automake --add-missing; ./configure
-```
+## Configuration <a name = "config"></a>
+
+  To prepare the files needed by `autotools`, run:
+
+  ```sh
+  aclocal
+  autoconf
+  automake --add-missing
+  ./configure # Optionally, with --enable-nogit or --host
+  ```
+
+  You will get a `./configure` script, which you can use to enable debug mode or other features.
+
+  - Run `./configure --host x86-64-w64-mingw32` to setup the `Makefile` appropriately for a `x86_64-w64-mingw32` build.
+  - Run `./configure --enable-nogit` to setup the `Makefile` appropriately and build with `-DCANVIL_NOGIT2` flag.
 
 ## Building <a name = "building"></a>
 
