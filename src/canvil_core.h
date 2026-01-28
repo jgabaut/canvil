@@ -22,7 +22,7 @@
 #define CANVIL_MINOR 1
 #define CANVIL_PATCH 1
 
-#define EXPECTED_AMBOSO_API_LEVEL "2.1.0"
+#define EXPECTED_AMBOSO_API_LEVEL "2.1.1"
 
 #ifndef _WIN32
 #include <regex.h>
@@ -49,7 +49,7 @@ extern const SemVer MIN_AMBOSO_V_KERN;
 extern const SemVer MIN_AMBOSO_V_TREEGEN;
 extern const SemVer MIN_AMBOSO_V_ANVILPY_KERN;
 extern const SemVer MIN_AMBOSO_V_REFUSE_TI;
-extern SemVer supported_anvil_versions[14];
+extern SemVer supported_anvil_versions[15];
 
 typedef enum Canvil_Tag_Type {
     CANVIL_BASE_TAG = 0,
