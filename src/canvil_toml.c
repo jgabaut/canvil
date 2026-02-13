@@ -200,6 +200,7 @@ bool getargs_from_filepath_as_stego(Anvil_Args* canvil_args, const char* filepat
                 bool is_versions_key = (strcmp(inner_key, "version") == 0);
                 bool is_kern_key = (strcmp(inner_key, "kern") == 0);
                 bool is_custombuilder_key = (strcmp(inner_key, "custombuilder") == 0);
+                bool is_recipe_key = (strcmp(inner_key, "recipe") == 0);
                 if (is_versions_key) {
                     const char* stego_val = get_table_stringval(inner_table, inner_key, "anvil", logger);
                     int major, minor, patch;
@@ -284,6 +285,53 @@ bool getargs_from_filepath_as_stego(Anvil_Args* canvil_args, const char* filepat
                     spr_logf_to(logger, SPR_DEBUG, "Found custombuilder {%s}", stego_val);
                     canvil_args->anvil_custombuilder = KLS_PUSH_ARR(kls, char, strlen(stego_val)+1);
                     memcpy(canvil_args->anvil_custombuilder, stego_val, strlen(stego_val)+1);
+                }
+                if (is_recipe_key) {
+                    toml_datum_t inner_array = toml_get(inner_table, inner_key);
+                    if (inner_array.type != TOML_ARRAY) {
+                        spr_logf_to(logger, SPR_ERROR, "can't get array for inner key {%s}", inner_key);
+                        toml_free(result);
+                        return false;
+                    }
+                    int array_size = inner_array.u.arr.size;
+                    canvil_env->recipes = KLS_PUSH_ARR(kls, Anvil_Recipe*, array_size);
+                    canvil_env->recipes_len = array_size;
+                    for (int k = 0; k < array_size ; k++) {
+                        toml_datum_t recipe_table_val = inner_array.u.arr.elem[k];
+                        if (recipe_table_val.type != TOML_TABLE) continue;
+                        int recipe_tab_len = recipe_table_val.u.tab.size;
+                        canvil_env->recipes[k] = KLS_PUSH(kls, Anvil_Recipe);
+                        for (int j = 0; j < recipe_tab_len; j++) {
+                            const char* recipe_key = recipe_table_val.u.tab.key[j];
+                            spr_logf_to(logger, SPR_DEBUG, "recipe_key %d: %s", j, recipe_key);
+                            bool is_recipe_build_key = (strcmp(recipe_key, "build") == 0);
+                            bool is_recipe_conf_key = (strcmp(recipe_key, "conf") == 0);
+                            bool is_recipe_vers_key = (strcmp(recipe_key, "vers") == 0);
+                            if (is_recipe_build_key) {
+                                const char* stego_val = get_table_stringval(recipe_table_val, recipe_key, "anvil_recipe", logger);
+                                canvil_env->recipes[k]->build = KLS_PUSH_ARR(kls, char, strlen(stego_val)+1);
+
+                                memcpy(canvil_env->recipes[k]->build, stego_val, strlen(stego_val)+1);
+                            }
+                            if (is_recipe_conf_key) {
+                                const char* stego_val = get_table_stringval(recipe_table_val, recipe_key, "anvil_recipe", logger);
+                                canvil_env->recipes[k]->conf = KLS_PUSH_ARR(kls, char, strlen(stego_val)+1);
+
+                                memcpy(canvil_env->recipes[k]->conf, stego_val, strlen(stego_val)+1);
+                            }
+                            if (is_recipe_vers_key) {
+                                SemVer smv = {0};
+                                const char* stego_val = get_table_stringval(recipe_table_val, recipe_key, "anvil_recipe", logger);
+                                if (!parseSemVer(stego_val, &(smv.major), &(smv.minor), &(smv.patch))) {
+                                    spr_logf_to(logger, SPR_ERROR, "Failed parsing SemVer: {%s}", stego_val);
+                                } else {
+                                    spr_logf_to(logger, SPR_DEBUG, "Semver: {" SemVer_Fmt "}", SemVer_Arg(smv));
+                                    canvil_env->recipes[k]->vers = smv;
+                                }
+                            }
+                            spr_logf_to(logger, SPR_DEBUG, "Found anvil_recipe[%i]", k);
+                        }
+                    }
                 }
             }
             if (is_build_table) {
