@@ -40,7 +40,7 @@ const SemVer MIN_AMBOSO_V_REFUSE_TI = {
     .major = 2, .minor = 0, .patch = 11,
 };
 
-SemVer supported_anvil_versions[19] = {
+SemVer supported_anvil_versions[20] = {
     { .major = 2, .minor = 0, .patch = 0 },
     MIN_AMBOSO_V_EXTENSIONS,
     MIN_AMBOSO_V_KERN,
@@ -60,6 +60,7 @@ SemVer supported_anvil_versions[19] = {
     { .major = 2, .minor = 1, .patch = 3 },
     { .major = 2, .minor = 1, .patch = 4 },
     { .major = 2, .minor = 1, .patch = 5 },
+    { .major = 2, .minor = 2, .patch = 0 },
 };
 
 // Function to validate SemVer string

@@ -21,11 +21,19 @@
 #include "canvil_tag_list.h"
 #include "canvil_test_list.h"
 
+typedef struct Anvil_Recipe {
+    char* build;
+    char* conf;
+    SemVer vers;
+} Anvil_Recipe;
+
 typedef struct Anvil_Env {
     Canvil_Tag_List base_tags;
     Canvil_Tag_List git_tags;
     Canvil_Test_List tests;
     Canvil_Test_List errortests;
+    Anvil_Recipe** recipes;
+    size_t recipes_len;
 } Anvil_Env;
 
 void canvil_print_base_tags(Anvil_Env anvil_env); /**< Prints base tags in an Anvil_Env.*/
