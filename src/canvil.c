@@ -1109,6 +1109,11 @@ int canvil_main(int argc, char** argv, Koliseo* default_kls)
             result = canvil_py_handle_build(logger, canvil_args.builds_dir_optarg, kls_t);
             kls_temp_end(kls_t);
         } else if (!strcmp(canvil_args.anvil_kern_optarg, "custom")) {
+            if (canvil_args.anvil_custombuilder == NULL) {
+                spr_logf_to(logger, SPR_ERROR, "Missing custombuilder definition");
+                result = -1;
+                return result;
+            }
             Koliseo_Temp* kls_t = kls_temp_start(default_kls);
             result = canvil_custom_handle_build(canvil_args.anvil_custombuilder, canvil_args.targetdir_optarg, canvil_args.builds_dir_optarg, canvil_args.bin_optarg, "", canvil_args.extra_args, canvil_args.extra_args_len, logger, kls_t);
             kls_temp_end(kls_t);
