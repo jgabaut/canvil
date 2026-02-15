@@ -197,14 +197,13 @@ bool canvil_check_dir_create(const char* dir_path)
 
 int canvil_SemVer_cmp(SemVer a, SemVer b)
 {
-    int res = 0;
+    if (a.major != b.major) return (a.major > b.major) ? 1 : -1;
 
-    if (a.major > b.major || a.minor > b.minor || a.patch > b.patch) {
-        res = 1;
-    } else if (a.major < b.major || a.minor < b.minor || a.patch < b.patch) {
-        res = -1;
-    }
-    return res;
+    if (a.minor != b.minor) return (a.minor > b.minor) ? 1 : -1;
+
+    if (a.patch != b.patch) return (a.patch > b.patch) ? 1 : -1;
+
+    return 0; // equal
 }
 
 bool canvil_tag_cmp(const Canvil_Tag *a, const Canvil_Tag *b)
