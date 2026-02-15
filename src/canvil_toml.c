@@ -294,13 +294,12 @@ bool getargs_from_filepath_as_stego(Anvil_Args* canvil_args, const char* filepat
                         return false;
                     }
                     int array_size = inner_array.u.arr.size;
-                    canvil_env->recipes = KLS_PUSH_ARR(kls, Anvil_Recipe*, array_size);
-                    canvil_env->recipes_len = array_size;
+                    canvil_env->recipes = da_recipes_init(kls);
                     for (int k = 0; k < array_size ; k++) {
                         toml_datum_t recipe_table_val = inner_array.u.arr.elem[k];
                         if (recipe_table_val.type != TOML_TABLE) continue;
                         int recipe_tab_len = recipe_table_val.u.tab.size;
-                        canvil_env->recipes[k] = KLS_PUSH(kls, Anvil_Recipe);
+                        da_recipes_push(canvil_env->recipes, KLS_PUSH(kls, Anvil_Recipe));
                         for (int j = 0; j < recipe_tab_len; j++) {
                             const char* recipe_key = recipe_table_val.u.tab.key[j];
                             spr_logf_to(logger, SPR_DEBUG, "recipe_key %d: %s", j, recipe_key);
@@ -309,15 +308,15 @@ bool getargs_from_filepath_as_stego(Anvil_Args* canvil_args, const char* filepat
                             bool is_recipe_vers_key = (strcmp(recipe_key, "vers") == 0);
                             if (is_recipe_build_key) {
                                 const char* stego_val = get_table_stringval(recipe_table_val, recipe_key, "anvil_recipe", logger);
-                                canvil_env->recipes[k]->build = KLS_PUSH_ARR(kls, char, strlen(stego_val)+1);
+                                canvil_env->recipes->items[k]->build = KLS_PUSH_ARR(kls, char, strlen(stego_val)+1);
 
-                                memcpy(canvil_env->recipes[k]->build, stego_val, strlen(stego_val)+1);
+                                memcpy(canvil_env->recipes->items[k]->build, stego_val, strlen(stego_val)+1);
                             }
                             if (is_recipe_conf_key) {
                                 const char* stego_val = get_table_stringval(recipe_table_val, recipe_key, "anvil_recipe", logger);
-                                canvil_env->recipes[k]->conf = KLS_PUSH_ARR(kls, char, strlen(stego_val)+1);
+                                canvil_env->recipes->items[k]->conf = KLS_PUSH_ARR(kls, char, strlen(stego_val)+1);
 
-                                memcpy(canvil_env->recipes[k]->conf, stego_val, strlen(stego_val)+1);
+                                memcpy(canvil_env->recipes->items[k]->conf, stego_val, strlen(stego_val)+1);
                             }
                             if (is_recipe_vers_key) {
                                 SemVer smv = {0};
@@ -326,7 +325,7 @@ bool getargs_from_filepath_as_stego(Anvil_Args* canvil_args, const char* filepat
                                     spr_logf_to(logger, SPR_ERROR, "Failed parsing SemVer: {%s}", stego_val);
                                 } else {
                                     spr_logf_to(logger, SPR_DEBUG, "Semver: {" SemVer_Fmt "}", SemVer_Arg(smv));
-                                    canvil_env->recipes[k]->vers = smv;
+                                    canvil_env->recipes->items[k]->vers = smv;
                                 }
                             }
                             spr_logf_to(logger, SPR_DEBUG, "Found anvil_recipe[%i]", k);
