@@ -4,7 +4,7 @@ SHELL := /bin/bash
 .ONESHELL:
 MACHINE := $$(uname -m)
 PACK_NAME = $(TARGET)-$(VERSION)-$(OS)-$(MACHINE)
-canvil_SOURCES = src/main.c src/canvil_log.c src/command.c src/canvil_core.c src/canvil_env.c src/canvil_toml.c src/canvil_op.c src/canvil.c src/canvil_py_env.c src/canvil_py.c src/canvil_custom.c koliseo/src/koliseo.c
+canvil_SOURCES = src/main.c src/canvil_log.c src/command.c src/canvil_core.c src/canvil_env.c src/canvil_toml.c src/canvil_op.c src/canvil.c src/canvil_py_env.c src/canvil_py.c src/canvil_custom.c src/canvil_recipe.c koliseo/src/koliseo.c
 LDADD = $(CANVIL_LDFLAGS)
 AM_LDFLAGS = -O2 -ltomlc17
 AM_CFLAGS = $(CANVIL_CFLAGS) -O2 -Werror -Wpedantic -Wall

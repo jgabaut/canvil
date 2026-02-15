@@ -971,6 +971,13 @@ int canvil_main(int argc, char** argv, Koliseo* default_kls)
             }
         }
 
+        if (!strcmp(canvil_args.anvil_kern_optarg, "custom")) {
+            da_recipes_sort(anvil_env.recipes, recipe_sorter);
+            for (int i = 0; i < anvil_env.recipes->count; i++) {
+                Anvil_Recipe* r = anvil_env.recipes->items[i];
+                spr_logf_to(logger, SPR_DEBUG, "Recipe #%i build {%s} conf {%s} vers {" SemVer_Fmt "}", i, r->build, r->conf, SemVer_Arg(r->vers));
+            }
+        }
     }
 
     char targetdir_pathbuf[FILENAME_MAX] = {0};
