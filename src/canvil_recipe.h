@@ -32,4 +32,5 @@ typedef struct Anvil_Recipe {
 int recipe_sorter(const Anvil_Recipe** a, const Anvil_Recipe** b);
 typedef int (*da_recipes_cmp_fn)(const Anvil_Recipe**, const Anvil_Recipe**);
 void da_recipes_sort(da_recipes* array, da_recipes_cmp_fn cmp);
+bool find_recipe(da_recipes* recipes, SemVer target, Anvil_Recipe* out);
 #endif // CANVIL_RECIPE_H_

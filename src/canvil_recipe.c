@@ -43,3 +43,16 @@ void da_recipes_sort(da_recipes* array, da_recipes_cmp_fn cmp)
           sizeof(Anvil_Recipe*),
           da_recipes_sort_adapter);
 }
+
+bool find_recipe(da_recipes* recipes, SemVer target, Anvil_Recipe* out)
+{
+    if (!recipes || !out) return false;
+    for (int i = 0; i < recipes->count; i++) {
+        Anvil_Recipe* r = recipes->items[i];
+        if (canvil_SemVer_cmp(out->vers, r->vers) >= 0) {
+            *out = *r;
+            return true;
+        }
+    }
+    return false;
+}

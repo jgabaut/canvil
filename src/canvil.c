@@ -1056,6 +1056,21 @@ int canvil_main(int argc, char** argv, Koliseo* default_kls)
             sprintf(latest_tag_str, "%i.%i.%i", latest_tag->version->major, latest_tag->version->minor, latest_tag->version->patch);
 
             spr_logf_to(logger, SPR_INFO, "Building latest tag: {%s}", latest_tag_str);
+            if (!strcmp(canvil_args.anvil_kern_optarg, "custom")) {
+                int major, minor, patch;
+
+                parseSemVer(canvil_args.anvil_version_optarg, &major, &minor, &patch);
+                SemVer target = { .major = major, .minor = minor, .patch = patch };
+                if (canvil_SemVer_cmp(target, MIN_AMBOSO_V_ANVILCUSTOM_RECIPES) >= 0) {
+                    Anvil_Recipe r = {0};
+                    if (!find_recipe(anvil_env.recipes, *(latest_tag->version), &r)) {
+                        spr_logf_to(logger, SPR_ERROR, "Could not find recipe for {%s}", latest_tag_str);
+                        return 1;
+                    }
+                    spr_logf_to(logger, SPR_DEBUG, "Using custom builder {%s}", r.build);
+                    canvil_args.anvil_custombuilder = r.build;
+                }
+            }
 
             bool build_res = canvil_op_build((canvil_args.git_mode == 1), (canvil_args.force_build == 1), (canvil_args.no_rebuild == 1), (canvil_args.passed_config_arg == 1), (canvil_args.config_optarg), canvil_args.minmake_optarg, canvil_args.minautomake_version, canvil_args.cflags_optarg, canvil_args.targetdir_optarg, canvil_args.builds_dir_optarg, latest_tag_str, canvil_args.bin_optarg, canvil_args.source_optarg, canvil_args.anvil_kern_optarg, canvil_py_env, canvil_args.anvil_custombuilder, canvil_args.extra_args, canvil_args.extra_args_len, logger, default_kls);
             canvil_report_elapsed(canvil_args.watch, timer, logger);
@@ -1120,6 +1135,23 @@ int canvil_main(int argc, char** argv, Koliseo* default_kls)
                 spr_logf_to(logger, SPR_ERROR, "Missing custombuilder definition");
                 result = -1;
                 return result;
+            }
+
+            int major, minor, patch;
+
+            parseSemVer(canvil_args.anvil_version_optarg, &major, &minor, &patch);
+            SemVer target = { .major = major, .minor = minor, .patch = patch };
+            if (canvil_SemVer_cmp(target, MIN_AMBOSO_V_ANVILCUSTOM_RECIPES) >= 0) {
+                Anvil_Recipe r = {0};
+                if (anvil_env.recipes->count > 0) {
+                    r = *(anvil_env.recipes->items[0]);
+                } else {
+                    spr_logf_to(logger, SPR_ERROR, "Could not find recipes");
+                    result = -1;
+                    return result;
+                }
+                spr_logf_to(logger, SPR_DEBUG, "Using custom builder {%s}", r.build);
+                canvil_args.anvil_custombuilder = r.build;
             }
             Koliseo_Temp* kls_t = kls_temp_start(default_kls);
             result = canvil_custom_handle_build(canvil_args.anvil_custombuilder, canvil_args.targetdir_optarg, canvil_args.builds_dir_optarg, canvil_args.bin_optarg, "", canvil_args.extra_args, canvil_args.extra_args_len, logger, kls_t);
