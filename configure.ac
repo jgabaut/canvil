@@ -16,7 +16,7 @@ case "${host_os}" in
 		build_windows=yes
         enable_nogit=yes
 		AC_SUBST([CANVIL_CFLAGS], ["-I/usr/x86_64-w64-mingw32/include -static -fstack-protector -DWINDOWS_BUILD"])
-		AC_SUBST([CANVIL_LDFLAGS], ["-L/usr/x86_64-w64-mingw32/lib -L ./tomlc17/src -ltomlc17 -larchive -lz -lpcre2-posix -lpcre2-8"])
+		AC_SUBST([CANVIL_LDFLAGS], ["-L/usr/x86_64-w64-mingw32/lib -L ./tomlc17/src -ltomlc17 -larchive -lzs -liconv -lcharset -lpcre2-posix -lpcre2-8"])
 		AC_SUBST([CCOMP], ["/usr/bin/x86_64-w64-mingw32-gcc"])
 		AC_SUBST([OS], ["w64-mingw32"])
 		AC_SUBST([TARGET], ["canvil.exe"])
