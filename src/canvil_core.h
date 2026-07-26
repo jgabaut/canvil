@@ -20,7 +20,7 @@
 
 #define CANVIL_MAJOR 0
 #define CANVIL_MINOR 1
-#define CANVIL_PATCH 3
+#define CANVIL_PATCH 4
 
 #define EXPECTED_AMBOSO_API_LEVEL "2.1.3"
 
@@ -139,7 +139,7 @@ static const int CANVIL_API_VERSION_INT =
 /**
  * Defines current API version string.
  */
-static const char CANVIL_API_VERSION_STRING[] = "0.1.3"; /**< Represents current version with MAJOR.MINOR.PATCH format.*/
+static const char CANVIL_API_VERSION_STRING[] = "0.1.4"; /**< Represents current version with MAJOR.MINOR.PATCH format.*/
 
 /**
  * Defines current OS string.
