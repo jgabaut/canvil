@@ -17,6 +17,30 @@
 */
 #include "canvil_recipe.h"
 
+bool da_recipes_validate(da_recipes* array, Spuro logger)
+{
+    if (!array) return false;
+    for (size_t i=0; i < array->count; i++) {
+        Anvil_Recipe* r = array->items[i];
+        if (!r) return false;
+        if (!r->build) {
+            spr_logf_to(logger, SPR_ERROR, "Failed checking anvil_recipe build value {%i}", i);
+            return false;
+        }
+        if (strlen(r->build) == 0) {
+            spr_logf_to(logger, SPR_ERROR, "Failed checking anvil_recipe build value {%i}", i);
+            return false;
+        }
+        SemVer empty_semver = {0};
+        if (canvil_SemVer_cmp(r->vers, empty_semver) == 0) {
+            spr_logf_to(logger, SPR_ERROR, "Failed checking anvil_recipe vers value {%i}", i);
+            return false;
+        }
+    }
+
+    return true;
+}
+
 int recipe_sorter(const Anvil_Recipe** a, const Anvil_Recipe** b)
 {
     return -1 * canvil_SemVer_cmp((*a)->vers, (*b)->vers);

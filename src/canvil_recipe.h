@@ -29,6 +29,7 @@ typedef struct Anvil_Recipe {
 #define DARRAY_NAME da_recipes
 #include "../koliseo/templates/darray.h"
 
+bool da_recipes_validate(da_recipes* array, Spuro logger);
 int recipe_sorter(const Anvil_Recipe** a, const Anvil_Recipe** b);
 typedef int (*da_recipes_cmp_fn)(const Anvil_Recipe**, const Anvil_Recipe**);
 void da_recipes_sort(da_recipes* array, da_recipes_cmp_fn cmp);

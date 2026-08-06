@@ -972,6 +972,10 @@ int canvil_main(int argc, char** argv, Koliseo* default_kls)
         }
 
         if (!strcmp(canvil_args.anvil_kern_optarg, "custom")) {
+            if (!da_recipes_validate(anvil_env.recipes, logger)) {
+                spr_clogf_to(logger, SPR_RED, SPR_ERROR, "Failed checking anvil_recipe");
+                return 1;
+            }
             da_recipes_sort(anvil_env.recipes, recipe_sorter);
             for (int i = 0; i < anvil_env.recipes->count; i++) {
                 Anvil_Recipe* r = anvil_env.recipes->items[i];
