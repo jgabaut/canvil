@@ -19,15 +19,11 @@
 
 bool da_recipes_validate(da_recipes* array, Spuro logger)
 {
-    if (!array) return false;
+    assert(array != NULL);
     for (size_t i=0; i < array->count; i++) {
         Anvil_Recipe* r = array->items[i];
-        if (!r) return false;
-        if (!r->build) {
-            spr_logf_to(logger, SPR_ERROR, "Failed checking anvil_recipe build value {%i}", i);
-            return false;
-        }
-        if (strlen(r->build) == 0) {
+        assert(r != NULL);
+        if (!r->build || strlen(r->build) == 0) {
             spr_logf_to(logger, SPR_ERROR, "Failed checking anvil_recipe build value {%i}", i);
             return false;
         }
