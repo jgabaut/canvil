@@ -31,8 +31,7 @@ bool da_recipes_validate(da_recipes* array, Spuro logger)
             spr_logf_to(logger, SPR_ERROR, "Failed checking anvil_recipe build value {%i}", i);
             return false;
         }
-        SemVer empty_semver = {0};
-        if (canvil_SemVer_cmp(r->vers, empty_semver) == 0) {
+        if (!r->vers) {
             spr_logf_to(logger, SPR_ERROR, "Failed checking anvil_recipe vers value {%i}", i);
             return false;
         }
@@ -43,7 +42,7 @@ bool da_recipes_validate(da_recipes* array, Spuro logger)
 
 int recipe_sorter(const Anvil_Recipe** a, const Anvil_Recipe** b)
 {
-    return -1 * canvil_SemVer_cmp((*a)->vers, (*b)->vers);
+    return -1 * canvil_SemVer_cmp(*((*a)->vers), *((*b)->vers));
 }
 
 static da_recipes_cmp_fn da_recipes_sort_cmp;
@@ -73,7 +72,7 @@ bool find_recipe(da_recipes* recipes, SemVer target, Anvil_Recipe* out)
     if (!recipes || !out) return false;
     for (int i = 0; i < recipes->count; i++) {
         Anvil_Recipe* r = recipes->items[i];
-        if (canvil_SemVer_cmp(out->vers, r->vers) >= 0) {
+        if (canvil_SemVer_cmp(*(out->vers), *(r->vers)) >= 0) {
             *out = *r;
             return true;
         }

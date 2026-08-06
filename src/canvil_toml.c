@@ -325,7 +325,8 @@ bool getargs_from_filepath_as_stego(Anvil_Args* canvil_args, const char* filepat
                                     spr_logf_to(logger, SPR_ERROR, "Failed parsing SemVer: {%s}", stego_val);
                                 } else {
                                     spr_logf_to(logger, SPR_DEBUG, "Semver: {" SemVer_Fmt "}", SemVer_Arg(smv));
-                                    canvil_env->recipes->items[k]->vers = smv;
+                                    canvil_env->recipes->items[k]->vers = KLS_PUSH(kls, SemVer);
+                                    *(canvil_env->recipes->items[k]->vers) = smv;
                                 }
                             }
                             spr_logf_to(logger, SPR_DEBUG, "Found anvil_recipe[%i]", k);

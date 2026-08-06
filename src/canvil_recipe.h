@@ -22,7 +22,7 @@
 typedef struct Anvil_Recipe {
     char* build;
     char* conf;
-    SemVer vers;
+    SemVer* vers;
 } Anvil_Recipe;
 
 #define DARRAY_T Anvil_Recipe*
