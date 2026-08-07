@@ -1136,12 +1136,6 @@ int canvil_main(int argc, char** argv, Koliseo* default_kls)
             result = canvil_py_handle_build(logger, canvil_args.builds_dir_optarg, kls_t);
             kls_temp_end(kls_t);
         } else if (!strcmp(canvil_args.anvil_kern_optarg, "custom")) {
-            if (canvil_args.anvil_custombuilder == NULL) {
-                spr_logf_to(logger, SPR_ERROR, "Missing custombuilder definition");
-                result = -1;
-                return result;
-            }
-
             int major, minor, patch;
 
             parseSemVer(canvil_args.anvil_version_optarg, &major, &minor, &patch);
@@ -1155,9 +1149,22 @@ int canvil_main(int argc, char** argv, Koliseo* default_kls)
                     result = -1;
                     return result;
                 }
+                if (r.conf != NULL) {
+                    spr_logf_to(logger, SPR_DEBUG, "Using custom configurer {%s}", r.conf);
+                    Koliseo_Temp* kls_t = kls_temp_start(default_kls);
+                    result = canvil_custom_handle_build(r.conf, canvil_args.targetdir_optarg, canvil_args.builds_dir_optarg, canvil_args.bin_optarg, "", canvil_args.extra_args, canvil_args.extra_args_len, logger, kls_t);
+                    kls_temp_end(kls_t);
+                }
                 spr_logf_to(logger, SPR_DEBUG, "Using custom builder {%s}", r.build);
                 canvil_args.anvil_custombuilder = r.build;
             }
+
+            if (canvil_args.anvil_custombuilder == NULL) {
+                spr_logf_to(logger, SPR_ERROR, "Missing custombuilder definition");
+                result = -1;
+                return result;
+            }
+
             Koliseo_Temp* kls_t = kls_temp_start(default_kls);
             result = canvil_custom_handle_build(canvil_args.anvil_custombuilder, canvil_args.targetdir_optarg, canvil_args.builds_dir_optarg, canvil_args.bin_optarg, "", canvil_args.extra_args, canvil_args.extra_args_len, logger, kls_t);
             kls_temp_end(kls_t);
