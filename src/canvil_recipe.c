@@ -68,7 +68,7 @@ bool find_recipe(da_recipes* recipes, SemVer target, Anvil_Recipe* out)
     if (!recipes || !out) return false;
     for (int i = 0; i < recipes->count; i++) {
         Anvil_Recipe* r = recipes->items[i];
-        if (canvil_SemVer_cmp(*(out->vers), *(r->vers)) >= 0) {
+        if (canvil_SemVer_cmp(target, *(r->vers)) >= 0) {
             *out = *r;
             return true;
         }
