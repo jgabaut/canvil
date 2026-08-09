@@ -26,10 +26,10 @@ koliseo/src:
 koliseo/src/koliseo.c: koliseo/src
 
 ./koliseo/src/koliseo.o:
-	@echo -e "    \033[1;35mAM_CFLAGS\e[0m: [ \"\033[1;34m$(AM_CFLAGS)\e[0m\" ]"
+	@echo -e "    \033[1;35mAM_CFLAGS\033[0m: [ \"\033[1;34m$(AM_CFLAGS)\033[0m\" ]"
 	@echo -en "Building ./koliseo/src/koliseo.o:  "
 	$(CCOMP) -c ./koliseo/src/koliseo.c $(AM_CFLAGS) -o ./koliseo/src/koliseo.o
-	@echo -e "\033[1;33mDone.\e[0m"
+	@echo -e "\033[1;33mDone.\033[0m"
 
 
 tomlc17/srcMakefile:
@@ -72,12 +72,12 @@ anviltest:
 install:
 	@echo -en "Installing canvil $(VERSION) globally as 'canvil':    "
 	install $(TARGET) /usr/local/bin/canvil
-	@echo -e "\033[1;33mDone.\e[0m"
+	@echo -e "\033[1;33mDone.\033[0m"
 
 uninstall:
 	@echo -en "Uninstalling canvil $(VERSION) globally as 'canvil':    "
 	rm /usr/local/bin/canvil
-	@echo -e "\033[1;33mDone.\e[0m"
+	@echo -e "\033[1;33mDone.\033[0m"
 
 all: $(TARGET)
 rebuild: clean all
