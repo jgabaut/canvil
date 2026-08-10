@@ -466,17 +466,17 @@ bool canvil_op_build(bool git_mode, bool force, bool no_rebuild, bool use_config
                             kls_temp_end(k_tmp);
                             git_repository_free(repo);
                             git_libgit2_shutdown(); // Shutdown libgit2
-                            return result;
+                            return false;
                         }
                         if (git_mode) git_repository_free(repo);
 #else
                         if (git_mode && !canvil_restore_previous_branch()) {
                             spr_logf_to(logger, SPR_ERROR, "Failed switchback from {%s}", tagname);
                             kls_temp_end(k_tmp);
-                            return result;
+                            return false;
                         }
 #endif // CANVIL_NOGIT2
-                        return result;
+                        return false;
                     }
                 }
                 spr_logf_to(logger, SPR_DEBUG, "Using custom builder {%s}", r.build);
