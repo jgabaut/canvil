@@ -459,6 +459,23 @@ bool canvil_op_build(bool git_mode, bool force, bool no_rebuild, bool use_config
                     int result = canvil_custom_handle_build(r.conf, targetdir_optarg, builds_dir_optarg, bin_optarg, "", extra_args, extra_args_len, logger, k_tmp);
                     if (result != 0) {
                         spr_logf_to(logger, SPR_ERROR, "Failed running conf step");
+                        if (git_mode) spr_logf_to(logger, SPR_INFO, "Switching back");
+#ifndef CANVIL_NOGIT2
+                        if (git_mode && !canvil_restore_previous_branch(repo, previous_head)) {
+                            spr_logf_to(logger, SPR_ERROR, "Failed switchback from {%s}", tagname);
+                            kls_temp_end(k_tmp);
+                            git_repository_free(repo);
+                            git_libgit2_shutdown(); // Shutdown libgit2
+                            return result;
+                        }
+                        if (git_mode) git_repository_free(repo);
+#else
+                        if (git_mode && !canvil_restore_previous_branch()) {
+                            spr_logf_to(logger, SPR_ERROR, "Failed switchback from {%s}", tagname);
+                            kls_temp_end(k_tmp);
+                            return result;
+                        }
+#endif // CANVIL_NOGIT2
                         return result;
                     }
                 }
