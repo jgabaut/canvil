@@ -32,12 +32,13 @@
 #include "canvil_py_env.h"
 #include "canvil_py.h"
 #include "canvil_custom.h"
+#include "canvil_env.h"
 
 int canvil_handle_make_call(bool use_autoconf, bool no_rebuild, bool use_configure_arg, const char* configure_arg, char** extra_args, size_t extra_args_len, Spuro logger, Koliseo_Temp* kls_t);
 bool canvil_op_delete(const char* targetdir_optarg, const char* tagname, const char* bin_optarg, Spuro logger, Koliseo* kls);
-bool canvil_op_build(bool git_mode, bool force, bool no_rebuild, bool use_config_arg, const char* config_optarg, const char* minmake_optarg, const char* minautomake_version, const char* cflags_optarg, const char* targetdir_optarg, const char* builds_dir_optarg, const char* tagname, const char* bin_optarg, const char* source_optarg, const char* kern, const char* anvil_version_optarg, AnvilPy_Env anvilpy_env, const char* custom_builder, char** extra_args, size_t extra_args_len, Spuro logger, Koliseo* kls);
+bool canvil_op_build(bool git_mode, bool force, bool no_rebuild, bool use_config_arg, const char* config_optarg, const char* minmake_optarg, const char* minautomake_version, const char* cflags_optarg, const char* targetdir_optarg, const char* builds_dir_optarg, const char* tagname, const char* bin_optarg, const char* source_optarg, const char* kern, const char* anvil_version_optarg, AnvilPy_Env anvilpy_env, Anvil_Env anvil_env, const char* custom_builder, char** extra_args, size_t extra_args_len, Spuro logger, Koliseo* kls);
 bool canvil_op_purge(const char* targetdir_optarg, Canvil_Tag_List tag_list, const char* bin_optarg, Spuro logger, Koliseo* kls);
-bool canvil_op_init(bool git_mode, bool force, bool no_rebuild, bool use_config_arg, const char* config_optarg, const char* minmake_optarg, const char* minautomake_version, const char* cflags_optarg, const char* targetdir_optarg, Canvil_Tag_List tag_list, const char* builds_dir_optarg, const char* bin_optarg, const char* source_optarg, const char* kern, const char* anvil_version_optarg, AnvilPy_Env anvilpy_env, const char* custom_builder, char** extra_args, size_t extra_args_len, Spuro logger, Koliseo* kls);
+bool canvil_op_init(bool git_mode, bool force, bool no_rebuild, bool use_config_arg, const char* config_optarg, const char* minmake_optarg, const char* minautomake_version, const char* cflags_optarg, const char* targetdir_optarg, Canvil_Tag_List tag_list, const char* builds_dir_optarg, const char* bin_optarg, const char* source_optarg, const char* kern, const char* anvil_version_optarg, AnvilPy_Env anvilpy_env, Anvil_Env anvil_env, const char* custom_builder, char** extra_args, size_t extra_args_len, Spuro logger, Koliseo* kls);
 bool canvil_op_run(const char* targetdir_optarg, const char* tagname, const char* bin_optarg, Spuro logger, Koliseo* kls);
 bool canvil_op_test(Anvil_Args* canvil_args, Canvil_Test query, Spuro logger, Koliseo* kls);
 int canvil_op_test_macro(Anvil_Args* canvil_args, Canvil_Test_List test_list, Canvil_Test_List errortest_list, Spuro logger, Koliseo* kls);
