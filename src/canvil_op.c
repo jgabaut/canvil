@@ -432,6 +432,39 @@ bool canvil_op_build(bool git_mode, bool force, bool no_rebuild, bool use_config
         } else if (!strcmp(kern, "anvilPy")) {
             make_res = canvil_py_handle_build(logger, builds_dir_optarg, k_tmp);
         } else if (!strcmp(kern, "custom")) {
+            int major, minor, patch;
+
+            parseSemVer(anvil_version_optarg, &major, &minor, &patch);
+            SemVer target = { .major = major, .minor = minor, .patch = patch };
+            if (canvil_SemVer_cmp(target, MIN_AMBOSO_V_ANVILCUSTOM_RECIPES) >= 0) {
+                Anvil_Recipe r = {0};
+                int major = 0;
+                int minor = 0;
+                int patch = 0;
+                if (!parseSemVer(tagname, &major, &minor, &patch)) {
+                    spr_logf_to(logger, SPR_ERROR, "Failed parsing tagname {%s} as SemVer", tagname);
+                    return -1;
+                }
+                SemVer semver = (SemVer) {
+                    .major = major,
+                    .minor = minor,
+                    .patch = patch
+                };
+                if (!find_recipe(anvil_env.recipes, semver, &r)) {
+                    spr_logf_to(logger, SPR_ERROR, "Could not find recipe for {%s}", tagname);
+                    return 1;
+                }
+                if (r.conf != NULL) {
+                    spr_logf_to(logger, SPR_DEBUG, "Using custom configurer {%s}", r.conf);
+                    int result = canvil_custom_handle_build(r.conf, targetdir_optarg, builds_dir_optarg, bin_optarg, "", extra_args, extra_args_len, logger, k_tmp);
+                    if (result != 0) {
+                        spr_logf_to(logger, SPR_ERROR, "Failed running conf step");
+                        return result;
+                    }
+                }
+                spr_logf_to(logger, SPR_DEBUG, "Using custom builder {%s}", r.build);
+                custom_builder = r.build;
+            }
             if (custom_builder != NULL) {
                 make_res = canvil_custom_handle_build(custom_builder, targetdir_optarg, builds_dir_optarg, bin_optarg, tagname, extra_args, extra_args_len, logger, k_tmp);
             } else {
