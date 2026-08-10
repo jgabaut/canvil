@@ -456,7 +456,7 @@ bool canvil_op_build(bool git_mode, bool force, bool no_rebuild, bool use_config
                 }
                 if (r.conf != NULL) {
                     spr_logf_to(logger, SPR_DEBUG, "Using custom configurer {%s}", r.conf);
-                    int result = canvil_custom_handle_build(r.conf, targetdir_optarg, builds_dir_optarg, bin_optarg, "", extra_args, extra_args_len, logger, k_tmp);
+                    int result = canvil_custom_handle_conf(r.conf, config_optarg, logger, k_tmp);
                     if (result != 0) {
                         spr_logf_to(logger, SPR_ERROR, "Failed running conf step");
                         if (git_mode) spr_logf_to(logger, SPR_INFO, "Switching back");

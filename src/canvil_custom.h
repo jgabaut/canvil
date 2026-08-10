@@ -20,4 +20,5 @@
 #include "canvil_core.h"
 #include "command.h"
 int canvil_custom_handle_build(const char* custom_builder, const char* target_dir, const char* builds_dir_optarg, const char* bin, const char* tag, char** extra_args, size_t extra_args_len, Spuro logger, Koliseo_Temp* k_tmp);
+int canvil_custom_handle_conf(const char* custom_confer, const char* config_optarg, Spuro logger, Koliseo_Temp* k_tmp);
 #endif // CANVIL_CUSTOM_H_

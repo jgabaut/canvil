@@ -1152,7 +1152,7 @@ int canvil_main(int argc, char** argv, Koliseo* default_kls)
                 if (r.conf != NULL) {
                     spr_logf_to(logger, SPR_DEBUG, "Using custom configurer {%s}", r.conf);
                     Koliseo_Temp* kls_t = kls_temp_start(default_kls);
-                    result = canvil_custom_handle_build(r.conf, canvil_args.targetdir_optarg, canvil_args.builds_dir_optarg, canvil_args.bin_optarg, "", canvil_args.extra_args, canvil_args.extra_args_len, logger, kls_t);
+                    result = canvil_custom_handle_conf(r.conf, canvil_args.config_optarg, logger, kls_t);
                     kls_temp_end(kls_t);
                 }
                 spr_logf_to(logger, SPR_DEBUG, "Using custom builder {%s}", r.build);
