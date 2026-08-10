@@ -1077,7 +1077,7 @@ int canvil_main(int argc, char** argv, Koliseo* default_kls)
                 }
             }
 
-            bool build_res = canvil_op_build((canvil_args.git_mode == 1), (canvil_args.force_build == 1), (canvil_args.no_rebuild == 1), (canvil_args.passed_config_arg == 1), (canvil_args.config_optarg), canvil_args.minmake_optarg, canvil_args.minautomake_version, canvil_args.cflags_optarg, canvil_args.targetdir_optarg, canvil_args.builds_dir_optarg, latest_tag_str, canvil_args.bin_optarg, canvil_args.source_optarg, canvil_args.anvil_kern_optarg, canvil_args.anvil_version_optarg, canvil_py_env, canvil_args.anvil_custombuilder, canvil_args.extra_args, canvil_args.extra_args_len, logger, default_kls);
+            bool build_res = canvil_op_build((canvil_args.git_mode == 1), (canvil_args.force_build == 1), (canvil_args.no_rebuild == 1), (canvil_args.passed_config_arg == 1), (canvil_args.config_optarg), canvil_args.minmake_optarg, canvil_args.minautomake_version, canvil_args.cflags_optarg, canvil_args.targetdir_optarg, canvil_args.builds_dir_optarg, latest_tag_str, canvil_args.bin_optarg, canvil_args.source_optarg, canvil_args.anvil_kern_optarg, canvil_args.anvil_version_optarg, canvil_py_env, anvil_env, canvil_args.anvil_custombuilder, canvil_args.extra_args, canvil_args.extra_args_len, logger, default_kls);
             canvil_report_elapsed(canvil_args.watch, timer, logger);
 
             if (build_res) return 0;
@@ -1341,7 +1341,7 @@ int canvil_check_passed_args(Anvil_Args* canvil_args, Anvil_Env* canvil_env, Anv
                 return -1;
             }
 
-            bool init_res = canvil_op_init(git_mode, (canvil_args->force_build == 1), (canvil_args->no_rebuild == 1), (canvil_args->passed_config_arg == 1), (canvil_args->config_optarg), canvil_args->minmake_optarg, canvil_args->minautomake_version, canvil_args->cflags_optarg, canvil_args->targetdir_optarg, tags_list, canvil_args->builds_dir_optarg, canvil_args->bin_optarg, canvil_args->source_optarg, canvil_args->anvil_kern_optarg, canvil_args->anvil_version_optarg, canvil_py_env, canvil_args->anvil_custombuilder, canvil_args->extra_args, canvil_args->extra_args_len, logger, kls);
+            bool init_res = canvil_op_init(git_mode, (canvil_args->force_build == 1), (canvil_args->no_rebuild == 1), (canvil_args->passed_config_arg == 1), (canvil_args->config_optarg), canvil_args->minmake_optarg, canvil_args->minautomake_version, canvil_args->cflags_optarg, canvil_args->targetdir_optarg, tags_list, canvil_args->builds_dir_optarg, canvil_args->bin_optarg, canvil_args->source_optarg, canvil_args->anvil_kern_optarg, canvil_args->anvil_version_optarg, canvil_py_env, *canvil_env, canvil_args->anvil_custombuilder, canvil_args->extra_args, canvil_args->extra_args_len, logger, kls);
             if (init_res) {
                 spr_logf_to(logger, SPR_INFO, "Success init for {%s}", canvil_args->targetdir_optarg);
             } else {
@@ -1403,7 +1403,7 @@ int canvil_check_passed_args(Anvil_Args* canvil_args, Anvil_Env* canvil_env, Anv
         }
 
         if (canvil_args->do_build == 1) {
-            bool build_res = canvil_op_build((canvil_args->git_mode == 1), (canvil_args->force_build == 1), (canvil_args->no_rebuild == 1), (canvil_args->passed_config_arg == 1), (canvil_args->config_optarg), canvil_args->minmake_optarg, canvil_args->minautomake_version, canvil_args->cflags_optarg, canvil_args->targetdir_optarg, canvil_args->builds_dir_optarg, tagname, canvil_args->bin_optarg, canvil_args->source_optarg, canvil_args->anvil_kern_optarg, canvil_args->anvil_version_optarg, canvil_py_env, canvil_args->anvil_custombuilder, canvil_args->extra_args, canvil_args->extra_args_len, logger, kls);
+            bool build_res = canvil_op_build((canvil_args->git_mode == 1), (canvil_args->force_build == 1), (canvil_args->no_rebuild == 1), (canvil_args->passed_config_arg == 1), (canvil_args->config_optarg), canvil_args->minmake_optarg, canvil_args->minautomake_version, canvil_args->cflags_optarg, canvil_args->targetdir_optarg, canvil_args->builds_dir_optarg, tagname, canvil_args->bin_optarg, canvil_args->source_optarg, canvil_args->anvil_kern_optarg, canvil_args->anvil_version_optarg, canvil_py_env, *canvil_env, canvil_args->anvil_custombuilder, canvil_args->extra_args, canvil_args->extra_args_len, logger, kls);
             if (build_res) {
                 spr_logf_to(logger, SPR_INFO, "Success building {%s/v%s/%s}", canvil_args->targetdir_optarg, tagname, canvil_args->bin_optarg);
             } else {
