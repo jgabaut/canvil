@@ -41,3 +41,17 @@ int canvil_custom_handle_build(const char* custom_builder, const char* target_di
     if (run_res) return 0;
     return -1;
 }
+
+int canvil_custom_handle_conf(const char* custom_confer, const char* config_optarg, Spuro logger, Koliseo_Temp* k_tmp)
+{
+    int args_len = 2;
+    if (config_optarg) args_len = 3;
+    const char** cmd_args = KLS_PUSH_ARR_T(k_tmp, const char*, args_len);
+    cmd_args[0] = custom_confer;
+    if (config_optarg) cmd_args[1] = config_optarg;
+
+    Komando cmd = new_command_kls_t(args_len-1, cmd_args, k_tmp);
+    bool run_res = run_command(cmd);
+    if (run_res) return 0;
+    return -1;
+}
