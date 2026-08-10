@@ -50,6 +50,12 @@ int canvil_custom_handle_conf(const char* custom_confer, const char* config_opta
     cmd_args[0] = custom_confer;
     if (config_optarg) cmd_args[1] = config_optarg;
 
+    if (!config_optarg) {
+        spr_logf_to(logger, SPR_DEBUG, "Running {%s}", custom_confer);
+    } else {
+        spr_logf_to(logger, SPR_DEBUG, "Running {%s %s}", custom_confer, config_optarg);
+    }
+
     Komando cmd = new_command_kls_t(args_len-1, cmd_args, k_tmp);
     bool run_res = run_command(cmd);
     if (run_res) return 0;
