@@ -166,4 +166,5 @@ bool canvil_check_dir_create(const char* dir_path);
 int canvil_SemVer_cmp(SemVer a, SemVer b);
 bool canvil_tag_cmp(const Canvil_Tag *a, const Canvil_Tag *b);
 bool canvil_test_cmp(const Canvil_Test *a, const Canvil_Test *b);
+bool canvil_cmd_token(char* cmd, char*** out, size_t* in_size, Koliseo_Temp* kls_t);
 #endif // CANVIL_CORE_H_
