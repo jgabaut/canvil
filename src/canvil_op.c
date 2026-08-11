@@ -254,18 +254,24 @@ int canvil_handle_make_call(bool use_autoconf, bool no_rebuild, bool use_configu
     if (need_autoreconf) {
 
         const char* autoreconf_prep_cmd_str = "aclocal; autoconf; automake --add-missing; ./configure";
-        char autoreconf_prep_actual_str[1024] = {0};
+        char** out = KLS_PUSH_T(kls_t, char*);
+        size_t out_size = 0;
         if (use_configure_arg) {
             spr_clogf_to(logger, SPR_CYAN, SPR_INFO, "Using configure argument {%s}", configure_arg);
-            sprintf(autoreconf_prep_actual_str, "%s %s", autoreconf_prep_cmd_str, configure_arg);
-        } else {
-            sprintf(autoreconf_prep_actual_str, "%s", autoreconf_prep_cmd_str);
+            // Note the cast
+            bool token_res = canvil_cmd_token((char*)configure_arg, &out, &out_size, kls_t);
+            if (!token_res) {
+                spr_clogf_to(logger, SPR_RED, SPR_ERROR, "Failed config argument tokenization");
+                return 1;
+            }
         }
-        const char* autoreconf_prep_cmd_args[2] = {
-            [0] = autoreconf_prep_actual_str,
-            [1] = NULL,
+        char** autoreconf_prep_cmd_args = KLS_PUSH_ARR_T(kls_t, char*, out_size+1);
+        autoreconf_prep_cmd_args[0] = (char*)autoreconf_prep_cmd_str;
+        for (size_t i=1; i < out_size; i++) {
+            autoreconf_prep_cmd_args[i] = out[i-1];
         };
-        Komando autoreconf_prep_cmd = new_shell_command_kls_t(1, autoreconf_prep_cmd_args, kls_t);
+        autoreconf_prep_cmd_args[out_size] = NULL;
+        Komando autoreconf_prep_cmd = new_shell_command_kls_t(out_size + 1, (const char**)autoreconf_prep_cmd_args, kls_t);
         bool run_res = run_command(autoreconf_prep_cmd);
         if (!run_res) {
             spr_clogf_to(logger, SPR_RED, SPR_ERROR, "%s", "Failed running autoreconf prep cmd");
