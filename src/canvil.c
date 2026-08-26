@@ -293,14 +293,16 @@ int copy_directory(const char *src, const char *dst) {
 
 int canvil_main(int argc, char** argv, Koliseo* default_kls)
 {
-    Spuro logger = {
-        .out = SPR_STDERR,
-        .fp = NULL,
-        .lvl = SPR_WARN,
-        .timed = false,
-        .colored = SPR_COLORED_HEADER,
-        .traced = false,
-    };
+
+    Spuro logger = spr_new_(
+            NULL, // fp
+            false, // check_file
+            SPR_STDERR, // out
+            SPR_WARN, // level
+            false, // timed
+            SPR_COLORED_HEADER, // color_mode
+            false // traced
+    );
 
     Anvil_Args canvil_args = {
         .version = 0,
