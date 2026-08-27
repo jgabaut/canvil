@@ -24,8 +24,8 @@ case "${host_os}" in
 	darwin*)
 		build_mac=yes
 		echo "Building for macos: [$host_cpu-$host_vendor-$host_os]"
-		AC_SUBST([CANVIL_CFLAGS], ["-I/opt/homebrew/opt/libgit2/include"])
-		AC_SUBST([CANVIL_LDFLAGS], ["-L/opt/homebrew/opt/libgit2/lib -L ./tomlc17/src -ltomlc17 -lgit2 -larchive"])
+		AC_SUBST([CANVIL_CFLAGS], ["-I/opt/homebrew/opt/libgit2/include -I/opt/homebrew/opt/libarchive/include"])
+		AC_SUBST([CANVIL_LDFLAGS], ["-L/opt/homebrew/opt/libgit2/lib -L/opt/homebrew/opt/libarchive/lib -L ./tomlc17/src -ltomlc17 -lgit2 -larchive"])
 		AC_SUBST([OS], ["darwin"])
 		AC_SUBST([TARGET], ["canvil"])
 	;;
