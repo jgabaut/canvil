@@ -729,6 +729,20 @@ bool lex_filepath_as_stego(const char* stego_path, Spuro logger)
                                 } else {
                                     spr_logf_to(logger, SPR_ERROR, "can't get value for inner_inner key {%s[%i]} in table {%s_%s}", inner_inner_key, k, key, inner_key);
                                 }
+                            } else if (inner_inner_inner_val.type == TOML_ARRAY) {
+                                int inner_inner_inner_array_len = inner_inner_inner_val.u.arr.size;
+                                for (int idx = 0; idx < inner_inner_inner_array_len; idx++) {
+                                    toml_datum_t inner_inner_inner_inner_val = inner_inner_inner_val.u.arr.elem[idx];
+                                    if (inner_inner_inner_inner_val.type == TOML_STRING) {
+                                        const char* stego_val = inner_inner_inner_inner_val.u.s;
+                                        if (stego_val != NULL) {
+                                            spr_logf_to(logger, SPR_TRACE, "value: %s", stego_val);
+                                            printf("In-Arr Structvalue: %s_%s_%i[%s_%i], Value: %s\n", key, inner_key, k, inner_inner_key, idx, stego_val);
+                                        } else {
+                                            spr_logf_to(logger, SPR_ERROR, "can't get value for inner_inner key {%s[%i]} in table {%s_%s}", inner_inner_key, k, key, inner_key);
+                                        }
+                                    }
+                                }
                             }
                         }
                     } else if (inner_inner_val.type == TOML_STRING) {
