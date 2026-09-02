@@ -305,6 +305,7 @@ bool getargs_from_filepath_as_stego(Anvil_Args* canvil_args, const char* filepat
                             spr_logf_to(logger, SPR_DEBUG, "recipe_key %d: %s", j, recipe_key);
                             bool is_recipe_build_key = (strcmp(recipe_key, "build") == 0);
                             bool is_recipe_conf_key = (strcmp(recipe_key, "conf") == 0);
+                            bool is_recipe_prep_key = (strcmp(recipe_key, "prep") == 0);
                             bool is_recipe_vers_key = (strcmp(recipe_key, "vers") == 0);
                             if (is_recipe_build_key) {
                                 const char* stego_val = get_table_stringval(recipe_table_val, recipe_key, "anvil_recipe", logger);
@@ -317,6 +318,12 @@ bool getargs_from_filepath_as_stego(Anvil_Args* canvil_args, const char* filepat
                                 canvil_env->recipes->items[k]->conf = KLS_PUSH_ARR(kls, char, strlen(stego_val)+1);
 
                                 memcpy(canvil_env->recipes->items[k]->conf, stego_val, strlen(stego_val)+1);
+                            }
+                            if (is_recipe_prep_key) {
+                                const char* stego_val = get_table_stringval(recipe_table_val, recipe_key, "anvil_recipe", logger);
+                                canvil_env->recipes->items[k]->prep = KLS_PUSH_ARR(kls, char, strlen(stego_val)+1);
+
+                                memcpy(canvil_env->recipes->items[k]->prep, stego_val, strlen(stego_val)+1);
                             }
                             if (is_recipe_vers_key) {
                                 SemVer smv = {0};

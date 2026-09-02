@@ -461,6 +461,41 @@ bool canvil_op_build(bool git_mode, bool force, bool no_rebuild, bool use_config
                     return 1;
                 }
                 if (r.conf != NULL) {
+                    if (!canvil_filepath_exists(r.conf)) {
+                        if (r.prep != NULL) {
+                            if (canvil_filepath_exists(r.prep)) {
+                                int result = canvil_custom_handle_conf(r.prep, config_optarg, logger, k_tmp);
+                                if (result != 0) {
+                                    spr_logf_to(logger, SPR_ERROR, "Failed running prep step");
+                                    if (git_mode) spr_logf_to(logger, SPR_INFO, "Switching back");
+#ifndef CANVIL_NOGIT2
+                                    if (git_mode && !canvil_restore_previous_branch(repo, previous_head)) {
+                                        spr_logf_to(logger, SPR_ERROR, "Failed switchback from {%s}", tagname);
+                                        kls_temp_end(k_tmp);
+                                        git_repository_free(repo);
+                                        git_libgit2_shutdown(); // Shutdown libgit2
+                                        return false;
+                                    }
+                                    if (git_mode) git_repository_free(repo);
+#else
+                                    if (git_mode && !canvil_restore_previous_branch()) {
+                                        spr_logf_to(logger, SPR_ERROR, "Failed switchback from {%s}", tagname);
+                                        kls_temp_end(k_tmp);
+                                        return false;
+                                    }
+#endif // CANVIL_NOGIT2
+                                    return false;
+                                }
+                            } else {
+                                spr_logf_to(logger, SPR_ERROR, "Could not find custom_prepper {%s} for {%s}", r.prep, tagname);
+                                return 1;
+                            }
+
+                        } else {
+                            spr_logf_to(logger, SPR_ERROR, "Could not find FOOcustom_configurer {%s} for {%s}", r.conf, tagname);
+                            return 1;
+                        }
+                    }
                     spr_logf_to(logger, SPR_DEBUG, "Using custom configurer {%s}", r.conf);
                     int result = canvil_custom_handle_conf(r.conf, config_optarg, logger, k_tmp);
                     if (result != 0) {
@@ -487,11 +522,47 @@ bool canvil_op_build(bool git_mode, bool force, bool no_rebuild, bool use_config
                 }
                 spr_logf_to(logger, SPR_DEBUG, "Using custom builder {%s}", r.build);
                 custom_builder = r.build;
-            }
-            if (custom_builder != NULL) {
-                make_res = canvil_custom_handle_build(custom_builder, targetdir_optarg, builds_dir_optarg, bin_optarg, tagname, extra_args, extra_args_len, logger, k_tmp);
-            } else {
-                spr_logf_to(logger, SPR_ERROR, "Missing custombuilder definition");
+                if (custom_builder != NULL) {
+                    if (!canvil_filepath_exists(custom_builder) && r.conf == NULL) {
+                        if (r.prep != NULL) {
+                            if (canvil_filepath_exists(r.prep)) {
+                                int result = canvil_custom_handle_conf(r.prep, config_optarg, logger, k_tmp);
+                                if (result != 0) {
+                                    spr_logf_to(logger, SPR_ERROR, "Failed running prep step");
+                                    if (git_mode) spr_logf_to(logger, SPR_INFO, "Switching back");
+#ifndef CANVIL_NOGIT2
+                                    if (git_mode && !canvil_restore_previous_branch(repo, previous_head)) {
+                                        spr_logf_to(logger, SPR_ERROR, "Failed switchback from {%s}", tagname);
+                                        kls_temp_end(k_tmp);
+                                        git_repository_free(repo);
+                                        git_libgit2_shutdown(); // Shutdown libgit2
+                                        return false;
+                                    }
+                                    if (git_mode) git_repository_free(repo);
+#else
+                                    if (git_mode && !canvil_restore_previous_branch()) {
+                                        spr_logf_to(logger, SPR_ERROR, "Failed switchback from {%s}", tagname);
+                                        kls_temp_end(k_tmp);
+                                        return false;
+                                    }
+#endif // CANVIL_NOGIT2
+                                     return false;
+                                }
+                            } else {
+                                spr_logf_to(logger, SPR_ERROR, "Could not find custom_prepper {%s} for {%s}", r.prep, tagname);
+                                return 1;
+                            }
+
+                        } else {
+                            spr_logf_to(logger, SPR_ERROR, "Could not find custom_builder {%s} for {%s}", custom_builder, tagname);
+                            return 1;
+                        }
+                    } else {
+                        make_res = canvil_custom_handle_build(custom_builder, targetdir_optarg, builds_dir_optarg, bin_optarg, tagname, extra_args, extra_args_len, logger, k_tmp);
+                    }
+                } else {
+                    spr_logf_to(logger, SPR_ERROR, "Missing custombuilder definition");
+                }
             }
         }
         if (make_res == 0) {
