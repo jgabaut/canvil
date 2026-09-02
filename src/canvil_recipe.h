@@ -22,6 +22,7 @@
 typedef struct Anvil_Recipe {
     char* build;
     char* conf;
+    char* prep;
     SemVer* vers;
 } Anvil_Recipe;
 
