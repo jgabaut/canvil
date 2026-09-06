@@ -951,6 +951,23 @@ int canvil_main(int argc, char** argv, Koliseo* default_kls)
         return 1;
     }
 
+    // gen-c subcommand
+    if (count_args > 0) {
+        if (!strcmp(argv[argc - count_args], "gen-c")) {
+            if (count_args > 2) {
+                const char* dirname = argv[argc - count_args +1];
+                const char* tagname = argv[argc - count_args +2];
+                bool gen_res = canvil_gen_header(dirname, canvil_args.anvil_kern_optarg, tagname, canvil_args.bin_optarg, logger, default_kls);
+                canvil_report_elapsed(canvil_args.watch, timer, logger);
+                return gen_res;
+            } else {
+                spr_logf_to(logger, SPR_ERROR, "Missing arguments for gen-c subcommand");
+                canvil_report_elapsed(canvil_args.watch, timer, logger);
+                return 1;
+            }
+        }
+    }
+
     AnvilPy_Env canvil_py_env = {0};
     if (canvil_args.passed_anvil_kern == 1) {
         int major, minor, patch;
