@@ -254,18 +254,24 @@ int canvil_handle_make_call(bool use_autoconf, bool no_rebuild, bool use_configu
     if (need_autoreconf) {
 
         const char* autoreconf_prep_cmd_str = "aclocal; autoconf; automake --add-missing; ./configure";
-        char autoreconf_prep_actual_str[1024] = {0};
+        char** out = KLS_PUSH_T(kls_t, char*);
+        size_t out_size = 0;
         if (use_configure_arg) {
             spr_clogf_to(logger, SPR_CYAN, SPR_INFO, "Using configure argument {%s}", configure_arg);
-            sprintf(autoreconf_prep_actual_str, "%s %s", autoreconf_prep_cmd_str, configure_arg);
-        } else {
-            sprintf(autoreconf_prep_actual_str, "%s", autoreconf_prep_cmd_str);
+            // Note the cast
+            bool token_res = canvil_cmd_token((char*)configure_arg, &out, &out_size, kls_t);
+            if (!token_res) {
+                spr_clogf_to(logger, SPR_RED, SPR_ERROR, "Failed config argument tokenization");
+                return 1;
+            }
         }
-        const char* autoreconf_prep_cmd_args[2] = {
-            [0] = autoreconf_prep_actual_str,
-            [1] = NULL,
+        char** autoreconf_prep_cmd_args = KLS_PUSH_ARR_T(kls_t, char*, out_size+1);
+        autoreconf_prep_cmd_args[0] = (char*)autoreconf_prep_cmd_str;
+        for (size_t i=1; i < out_size; i++) {
+            autoreconf_prep_cmd_args[i] = out[i-1];
         };
-        Komando autoreconf_prep_cmd = new_shell_command_kls_t(1, autoreconf_prep_cmd_args, kls_t);
+        autoreconf_prep_cmd_args[out_size] = NULL;
+        Komando autoreconf_prep_cmd = new_shell_command_kls_t(out_size + 1, (const char**)autoreconf_prep_cmd_args, kls_t);
         bool run_res = run_command(autoreconf_prep_cmd);
         if (!run_res) {
             spr_clogf_to(logger, SPR_RED, SPR_ERROR, "%s", "Failed running autoreconf prep cmd");
@@ -342,7 +348,7 @@ bool canvil_op_delete(const char* targetdir_optarg, const char* tagname, const c
     return res;
 }
 
-bool canvil_op_build(bool git_mode, bool force, bool no_rebuild, bool use_config_arg, const char* config_optarg, const char* minmake_optarg, const char* minautomake_version, const char* cflags_optarg, const char* targetdir_optarg, const char* builds_dir_optarg, const char* tagname, const char* bin_optarg, const char* source_optarg, const char* kern, AnvilPy_Env anvilpy_env, const char* custom_builder, char** extra_args, size_t extra_args_len, Spuro logger, Koliseo* kls)
+bool canvil_op_build(bool git_mode, bool force, bool no_rebuild, bool use_config_arg, const char* config_optarg, const char* minmake_optarg, const char* minautomake_version, const char* cflags_optarg, const char* targetdir_optarg, const char* builds_dir_optarg, const char* tagname, const char* bin_optarg, const char* source_optarg, const char* kern, const char* anvil_version_optarg, AnvilPy_Env anvilpy_env, Anvil_Env anvil_env, const char* custom_builder, char** extra_args, size_t extra_args_len, Spuro logger, Koliseo* kls)
 {
     assert(kls != NULL);
 
@@ -432,10 +438,131 @@ bool canvil_op_build(bool git_mode, bool force, bool no_rebuild, bool use_config
         } else if (!strcmp(kern, "anvilPy")) {
             make_res = canvil_py_handle_build(logger, builds_dir_optarg, k_tmp);
         } else if (!strcmp(kern, "custom")) {
-            if (custom_builder != NULL) {
-                make_res = canvil_custom_handle_build(custom_builder, targetdir_optarg, builds_dir_optarg, bin_optarg, tagname, extra_args, extra_args_len, logger, k_tmp);
-            } else {
-                spr_logf_to(logger, SPR_ERROR, "Missing custombuilder definition");
+            int major, minor, patch;
+
+            parseSemVer(anvil_version_optarg, &major, &minor, &patch);
+            SemVer target = { .major = major, .minor = minor, .patch = patch };
+            if (canvil_SemVer_cmp(target, MIN_AMBOSO_V_ANVILCUSTOM_RECIPES) >= 0) {
+                Anvil_Recipe r = {0};
+                int major = 0;
+                int minor = 0;
+                int patch = 0;
+                if (!parseSemVer(tagname, &major, &minor, &patch)) {
+                    spr_logf_to(logger, SPR_ERROR, "Failed parsing tagname {%s} as SemVer", tagname);
+                    return -1;
+                }
+                SemVer semver = (SemVer) {
+                    .major = major,
+                    .minor = minor,
+                    .patch = patch
+                };
+                if (!find_recipe(anvil_env.recipes, semver, &r)) {
+                    spr_logf_to(logger, SPR_ERROR, "Could not find recipe for {%s}", tagname);
+                    return 1;
+                }
+                if (r.conf != NULL) {
+                    if (!canvil_filepath_exists(r.conf)) {
+                        if (r.prep != NULL) {
+                            if (canvil_filepath_exists(r.prep)) {
+                                int result = canvil_custom_handle_conf(r.prep, config_optarg, logger, k_tmp);
+                                if (result != 0) {
+                                    spr_logf_to(logger, SPR_ERROR, "Failed running prep step");
+                                    if (git_mode) spr_logf_to(logger, SPR_INFO, "Switching back");
+#ifndef CANVIL_NOGIT2
+                                    if (git_mode && !canvil_restore_previous_branch(repo, previous_head)) {
+                                        spr_logf_to(logger, SPR_ERROR, "Failed switchback from {%s}", tagname);
+                                        kls_temp_end(k_tmp);
+                                        git_repository_free(repo);
+                                        git_libgit2_shutdown(); // Shutdown libgit2
+                                        return false;
+                                    }
+                                    if (git_mode) git_repository_free(repo);
+#else
+                                    if (git_mode && !canvil_restore_previous_branch()) {
+                                        spr_logf_to(logger, SPR_ERROR, "Failed switchback from {%s}", tagname);
+                                        kls_temp_end(k_tmp);
+                                        return false;
+                                    }
+#endif // CANVIL_NOGIT2
+                                    return false;
+                                }
+                            } else {
+                                spr_logf_to(logger, SPR_ERROR, "Could not find custom_prepper {%s} for {%s}", r.prep, tagname);
+                                return 1;
+                            }
+
+                        } else {
+                            spr_logf_to(logger, SPR_ERROR, "Could not find FOOcustom_configurer {%s} for {%s}", r.conf, tagname);
+                            return 1;
+                        }
+                    }
+                    spr_logf_to(logger, SPR_DEBUG, "Using custom configurer {%s}", r.conf);
+                    int result = canvil_custom_handle_conf(r.conf, config_optarg, logger, k_tmp);
+                    if (result != 0) {
+                        spr_logf_to(logger, SPR_ERROR, "Failed running conf step");
+                        if (git_mode) spr_logf_to(logger, SPR_INFO, "Switching back");
+#ifndef CANVIL_NOGIT2
+                        if (git_mode && !canvil_restore_previous_branch(repo, previous_head)) {
+                            spr_logf_to(logger, SPR_ERROR, "Failed switchback from {%s}", tagname);
+                            kls_temp_end(k_tmp);
+                            git_repository_free(repo);
+                            git_libgit2_shutdown(); // Shutdown libgit2
+                            return false;
+                        }
+                        if (git_mode) git_repository_free(repo);
+#else
+                        if (git_mode && !canvil_restore_previous_branch()) {
+                            spr_logf_to(logger, SPR_ERROR, "Failed switchback from {%s}", tagname);
+                            kls_temp_end(k_tmp);
+                            return false;
+                        }
+#endif // CANVIL_NOGIT2
+                        return false;
+                    }
+                }
+                spr_logf_to(logger, SPR_DEBUG, "Using custom builder {%s}", r.build);
+                custom_builder = r.build;
+                if (custom_builder != NULL) {
+                    if (!canvil_filepath_exists(custom_builder) && r.conf == NULL) {
+                        if (r.prep != NULL) {
+                            if (canvil_filepath_exists(r.prep)) {
+                                int result = canvil_custom_handle_conf(r.prep, config_optarg, logger, k_tmp);
+                                if (result != 0) {
+                                    spr_logf_to(logger, SPR_ERROR, "Failed running prep step");
+                                    if (git_mode) spr_logf_to(logger, SPR_INFO, "Switching back");
+#ifndef CANVIL_NOGIT2
+                                    if (git_mode && !canvil_restore_previous_branch(repo, previous_head)) {
+                                        spr_logf_to(logger, SPR_ERROR, "Failed switchback from {%s}", tagname);
+                                        kls_temp_end(k_tmp);
+                                        git_repository_free(repo);
+                                        git_libgit2_shutdown(); // Shutdown libgit2
+                                        return false;
+                                    }
+                                    if (git_mode) git_repository_free(repo);
+#else
+                                    if (git_mode && !canvil_restore_previous_branch()) {
+                                        spr_logf_to(logger, SPR_ERROR, "Failed switchback from {%s}", tagname);
+                                        kls_temp_end(k_tmp);
+                                        return false;
+                                    }
+#endif // CANVIL_NOGIT2
+                                     return false;
+                                }
+                            } else {
+                                spr_logf_to(logger, SPR_ERROR, "Could not find custom_prepper {%s} for {%s}", r.prep, tagname);
+                                return 1;
+                            }
+
+                        } else {
+                            spr_logf_to(logger, SPR_ERROR, "Could not find custom_builder {%s} for {%s}", custom_builder, tagname);
+                            return 1;
+                        }
+                    } else {
+                        make_res = canvil_custom_handle_build(custom_builder, targetdir_optarg, builds_dir_optarg, bin_optarg, tagname, extra_args, extra_args_len, logger, k_tmp);
+                    }
+                } else {
+                    spr_logf_to(logger, SPR_ERROR, "Missing custombuilder definition");
+                }
             }
         }
         if (make_res == 0) {
@@ -518,7 +645,7 @@ bool canvil_op_purge(const char* targetdir_optarg, Canvil_Tag_List tag_list, con
     return res;
 }
 
-bool canvil_op_init(bool git_mode, bool force, bool no_rebuild, bool use_config_arg, const char* config_optarg, const char* minmake_optarg, const char* minautomake_version, const char* cflags_optarg, const char* targetdir_optarg, Canvil_Tag_List tag_list, const char* builds_dir_optarg, const char* bin_optarg, const char* source_optarg, const char* kern, AnvilPy_Env anvilpy_env, const char* custom_builder, char** extra_args, size_t extra_args_len, Spuro logger, Koliseo* kls)
+bool canvil_op_init(bool git_mode, bool force, bool no_rebuild, bool use_config_arg, const char* config_optarg, const char* minmake_optarg, const char* minautomake_version, const char* cflags_optarg, const char* targetdir_optarg, Canvil_Tag_List tag_list, const char* builds_dir_optarg, const char* bin_optarg, const char* source_optarg, const char* kern, const char* anvil_version_optarg, AnvilPy_Env anvilpy_env, Anvil_Env anvil_env, const char* custom_builder, char** extra_args, size_t extra_args_len, Spuro logger, Koliseo* kls)
 {
     assert(kls != NULL);
     spr_logf_to(logger, SPR_INFO, "Doing init for {%s}, bin is {%s}", targetdir_optarg, bin_optarg);
@@ -531,7 +658,7 @@ bool canvil_op_init(bool git_mode, bool force, bool no_rebuild, bool use_config_
         char tag_repr[200] = {0};
         snprintf(tag_repr, 200, SemVer_Fmt, SemVer_Arg(node_value));
         tag_repr[199] = '\0';
-        bool build_res = canvil_op_build(git_mode, force, no_rebuild, use_config_arg, config_optarg, minmake_optarg, minautomake_version, cflags_optarg, targetdir_optarg, builds_dir_optarg, tag_repr, bin_optarg, source_optarg, kern, anvilpy_env, custom_builder, extra_args, extra_args_len, logger, kls);
+        bool build_res = canvil_op_build(git_mode, force, no_rebuild, use_config_arg, config_optarg, minmake_optarg, minautomake_version, cflags_optarg, targetdir_optarg, builds_dir_optarg, tag_repr, bin_optarg, source_optarg, kern, anvil_version_optarg, anvilpy_env, anvil_env, custom_builder, extra_args, extra_args_len, logger, kls);
         if (build_res) {
             spr_logtf_to(logger, SPR_INFO, "Success building {%s/v%s/%s}", targetdir_optarg, tag_repr, bin_optarg);
             successes++;

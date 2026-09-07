@@ -41,3 +41,40 @@ int canvil_custom_handle_build(const char* custom_builder, const char* target_di
     if (run_res) return 0;
     return -1;
 }
+
+int canvil_custom_handle_conf(const char* custom_confer, const char* config_optarg, Spuro logger, Koliseo_Temp* k_tmp)
+{
+    char** out = KLS_PUSH_T(k_tmp, char*);
+    assert(out != NULL);
+    size_t out_size = 0;
+    if (config_optarg) {
+        spr_clogf_to(logger, SPR_CYAN, SPR_INFO, "Using configure argument {%s}", config_optarg);
+        // Note the cast
+        bool token_res = canvil_cmd_token((char*)config_optarg, &out, &out_size, k_tmp);
+        if (!token_res) {
+            spr_clogf_to(logger, SPR_RED, SPR_ERROR, "Failed config argument tokenization");
+            return 1;
+        }
+    }
+    char** conf_cmd_args = KLS_PUSH_ARR_T(k_tmp, char*, out_size+2);
+    conf_cmd_args[0] = (char*)custom_confer;
+    for (size_t i=0; i < out_size; i++) {
+        conf_cmd_args[i+1] = out[i];
+    };
+    conf_cmd_args[out_size+1] = NULL;
+
+    if (!config_optarg) {
+        spr_logf_to(logger, SPR_DEBUG, "Running {%s}", custom_confer);
+    } else {
+        spr_logf_to(logger, SPR_DEBUG, "Running custom confer {%s} args: {", custom_confer);
+        for (size_t i=0; i < out_size; i++) {
+            spr_logf_to(logger, SPR_DEBUG, "    {%s}", conf_cmd_args[i]);
+        }
+        spr_logf_to(logger, SPR_DEBUG, "}");
+    }
+
+    Komando cmd = new_command_kls_t(out_size +1, (const char**)conf_cmd_args, k_tmp);
+    bool run_res = run_command(cmd);
+    if (run_res) return 0;
+    return -1;
+}

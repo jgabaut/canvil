@@ -15,10 +15,24 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#ifndef CANVIL_CUSTOM_H_
-#define CANVIL_CUSTOM_H_
+#ifndef CANVIL_RECIPE_H_
+#define CANVIL_RECIPE_H_
+
 #include "canvil_core.h"
-#include "command.h"
-int canvil_custom_handle_build(const char* custom_builder, const char* target_dir, const char* builds_dir_optarg, const char* bin, const char* tag, char** extra_args, size_t extra_args_len, Spuro logger, Koliseo_Temp* k_tmp);
-int canvil_custom_handle_conf(const char* custom_confer, const char* config_optarg, Spuro logger, Koliseo_Temp* k_tmp);
-#endif // CANVIL_CUSTOM_H_
+typedef struct Anvil_Recipe {
+    char* build;
+    char* conf;
+    char* prep;
+    SemVer* vers;
+} Anvil_Recipe;
+
+#define DARRAY_T Anvil_Recipe*
+#define DARRAY_NAME da_recipes
+#include "../koliseo/templates/darray.h"
+
+bool da_recipes_validate(da_recipes* array, Spuro logger);
+int recipe_sorter(const Anvil_Recipe** a, const Anvil_Recipe** b);
+typedef int (*da_recipes_cmp_fn)(const Anvil_Recipe**, const Anvil_Recipe**);
+void da_recipes_sort(da_recipes* array, da_recipes_cmp_fn cmp);
+bool find_recipe(da_recipes* recipes, SemVer target, Anvil_Recipe* out);
+#endif // CANVIL_RECIPE_H_

@@ -40,7 +40,11 @@ const SemVer MIN_AMBOSO_V_REFUSE_TI = {
     .major = 2, .minor = 0, .patch = 11,
 };
 
-SemVer supported_anvil_versions[19] = {
+const SemVer MIN_AMBOSO_V_ANVILCUSTOM_RECIPES = {
+    .major = 2, .minor = 2, .patch = 0,
+};
+
+SemVer supported_anvil_versions[20] = {
     { .major = 2, .minor = 0, .patch = 0 },
     MIN_AMBOSO_V_EXTENSIONS,
     MIN_AMBOSO_V_KERN,
@@ -60,6 +64,7 @@ SemVer supported_anvil_versions[19] = {
     { .major = 2, .minor = 1, .patch = 3 },
     { .major = 2, .minor = 1, .patch = 4 },
     { .major = 2, .minor = 1, .patch = 5 },
+    MIN_AMBOSO_V_ANVILCUSTOM_RECIPES,
 };
 
 // Function to validate SemVer string
@@ -220,4 +225,31 @@ bool canvil_test_cmp(const Canvil_Test *a, const Canvil_Test *b)
 {
     int res = strcmp(a->name, b->name);
     return (res == 0);
+}
+
+
+/**
+ * Do not use with string literals.
+ */
+bool canvil_cmd_token(char* cmd, char*** out, size_t* in_size, Koliseo_Temp* kls_t)
+{
+    assert(out != NULL);
+    assert(*out != NULL);
+    char *token = strtok(cmd, " \t\n");
+
+    while (token != NULL) {
+        char **tmp = KLS_REPUSH_T(kls_t, *out, char*, *in_size, ((*in_size) + 2));
+        if (tmp == NULL) {
+            /* handle allocation failure */
+            return false;
+        }
+
+        *out = tmp;
+        (*out)[(*in_size)] = token;
+        (*in_size) += 1;
+        (*out)[(*in_size)] = NULL;
+
+        token = strtok(NULL, " \t\n");
+    }
+    return true;
 }

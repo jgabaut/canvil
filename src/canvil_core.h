@@ -20,7 +20,7 @@
 
 #define CANVIL_MAJOR 0
 #define CANVIL_MINOR 1
-#define CANVIL_PATCH 5
+#define CANVIL_PATCH 6
 
 #define EXPECTED_AMBOSO_API_LEVEL "2.1.5"
 
@@ -49,7 +49,8 @@ extern const SemVer MIN_AMBOSO_V_KERN;
 extern const SemVer MIN_AMBOSO_V_TREEGEN;
 extern const SemVer MIN_AMBOSO_V_ANVILPY_KERN;
 extern const SemVer MIN_AMBOSO_V_REFUSE_TI;
-extern SemVer supported_anvil_versions[19];
+extern const SemVer MIN_AMBOSO_V_ANVILCUSTOM_RECIPES;
+extern SemVer supported_anvil_versions[20];
 
 typedef enum Canvil_Tag_Type {
     CANVIL_BASE_TAG = 0,
@@ -139,7 +140,7 @@ static const int CANVIL_API_VERSION_INT =
 /**
  * Defines current API version string.
  */
-static const char CANVIL_API_VERSION_STRING[] = "0.1.5"; /**< Represents current version with MAJOR.MINOR.PATCH format.*/
+static const char CANVIL_API_VERSION_STRING[] = "0.1.6"; /**< Represents current version with MAJOR.MINOR.PATCH format.*/
 
 /**
  * Defines current OS string.
@@ -165,4 +166,5 @@ bool canvil_check_dir_create(const char* dir_path);
 int canvil_SemVer_cmp(SemVer a, SemVer b);
 bool canvil_tag_cmp(const Canvil_Tag *a, const Canvil_Tag *b);
 bool canvil_test_cmp(const Canvil_Test *a, const Canvil_Test *b);
+bool canvil_cmd_token(char* cmd, char*** out, size_t* in_size, Koliseo_Temp* kls_t);
 #endif // CANVIL_CORE_H_

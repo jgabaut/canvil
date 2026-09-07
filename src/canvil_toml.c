@@ -200,6 +200,7 @@ bool getargs_from_filepath_as_stego(Anvil_Args* canvil_args, const char* filepat
                 bool is_versions_key = (strcmp(inner_key, "version") == 0);
                 bool is_kern_key = (strcmp(inner_key, "kern") == 0);
                 bool is_custombuilder_key = (strcmp(inner_key, "custombuilder") == 0);
+                bool is_recipe_key = (strcmp(inner_key, "recipe") == 0);
                 if (is_versions_key) {
                     const char* stego_val = get_table_stringval(inner_table, inner_key, "anvil", logger);
                     int major, minor, patch;
@@ -284,6 +285,60 @@ bool getargs_from_filepath_as_stego(Anvil_Args* canvil_args, const char* filepat
                     spr_logf_to(logger, SPR_DEBUG, "Found custombuilder {%s}", stego_val);
                     canvil_args->anvil_custombuilder = KLS_PUSH_ARR(kls, char, strlen(stego_val)+1);
                     memcpy(canvil_args->anvil_custombuilder, stego_val, strlen(stego_val)+1);
+                }
+                if (is_recipe_key) {
+                    toml_datum_t inner_array = toml_get(inner_table, inner_key);
+                    if (inner_array.type != TOML_ARRAY) {
+                        spr_logf_to(logger, SPR_ERROR, "can't get array for inner key {%s}", inner_key);
+                        toml_free(result);
+                        return false;
+                    }
+                    int array_size = inner_array.u.arr.size;
+                    canvil_env->recipes = da_recipes_init(kls);
+                    for (int k = 0; k < array_size ; k++) {
+                        toml_datum_t recipe_table_val = inner_array.u.arr.elem[k];
+                        if (recipe_table_val.type != TOML_TABLE) continue;
+                        int recipe_tab_len = recipe_table_val.u.tab.size;
+                        da_recipes_push(canvil_env->recipes, KLS_PUSH(kls, Anvil_Recipe));
+                        for (int j = 0; j < recipe_tab_len; j++) {
+                            const char* recipe_key = recipe_table_val.u.tab.key[j];
+                            spr_logf_to(logger, SPR_DEBUG, "recipe_key %d: %s", j, recipe_key);
+                            bool is_recipe_build_key = (strcmp(recipe_key, "build") == 0);
+                            bool is_recipe_conf_key = (strcmp(recipe_key, "conf") == 0);
+                            bool is_recipe_prep_key = (strcmp(recipe_key, "prep") == 0);
+                            bool is_recipe_vers_key = (strcmp(recipe_key, "vers") == 0);
+                            if (is_recipe_build_key) {
+                                const char* stego_val = get_table_stringval(recipe_table_val, recipe_key, "anvil_recipe", logger);
+                                canvil_env->recipes->items[k]->build = KLS_PUSH_ARR(kls, char, strlen(stego_val)+1);
+
+                                memcpy(canvil_env->recipes->items[k]->build, stego_val, strlen(stego_val)+1);
+                            }
+                            if (is_recipe_conf_key) {
+                                const char* stego_val = get_table_stringval(recipe_table_val, recipe_key, "anvil_recipe", logger);
+                                canvil_env->recipes->items[k]->conf = KLS_PUSH_ARR(kls, char, strlen(stego_val)+1);
+
+                                memcpy(canvil_env->recipes->items[k]->conf, stego_val, strlen(stego_val)+1);
+                            }
+                            if (is_recipe_prep_key) {
+                                const char* stego_val = get_table_stringval(recipe_table_val, recipe_key, "anvil_recipe", logger);
+                                canvil_env->recipes->items[k]->prep = KLS_PUSH_ARR(kls, char, strlen(stego_val)+1);
+
+                                memcpy(canvil_env->recipes->items[k]->prep, stego_val, strlen(stego_val)+1);
+                            }
+                            if (is_recipe_vers_key) {
+                                SemVer smv = {0};
+                                const char* stego_val = get_table_stringval(recipe_table_val, recipe_key, "anvil_recipe", logger);
+                                if (!parseSemVer(stego_val, &(smv.major), &(smv.minor), &(smv.patch))) {
+                                    spr_logf_to(logger, SPR_ERROR, "Failed parsing SemVer: {%s}", stego_val);
+                                } else {
+                                    spr_logf_to(logger, SPR_DEBUG, "Semver: {" SemVer_Fmt "}", SemVer_Arg(smv));
+                                    canvil_env->recipes->items[k]->vers = KLS_PUSH(kls, SemVer);
+                                    *(canvil_env->recipes->items[k]->vers) = smv;
+                                }
+                            }
+                            spr_logf_to(logger, SPR_DEBUG, "Found anvil_recipe[%i]", k);
+                        }
+                    }
                 }
             }
             if (is_build_table) {
@@ -653,13 +708,60 @@ bool lex_filepath_as_stego(const char* stego_path, Spuro logger)
         for (int j = 0; j < inner_tab_len; j++) {
             const char* inner_key = inner_table.u.tab.key[j];
             spr_logf_to(logger, SPR_TRACE, "inner_key %d: %s", j, inner_key);
-            const char* stego_val = get_table_stringval(inner_table, inner_key, key, logger);
+            toml_datum_t inner_val = toml_get(inner_table, inner_key);
+            if (inner_val.type == TOML_STRING) {
+                const char* stego_val = get_table_stringval(inner_table, inner_key, key, logger);
 
-            if (stego_val != NULL) {
-                spr_logf_to(logger, SPR_TRACE, "value: %s", stego_val);
-                printf("Variable: %s_%s, Value: %s\n", key, inner_key, stego_val);
-            } else {
-                spr_logf_to(logger, SPR_ERROR, "can't get value for inner key {%s} in table {%s}", inner_key, key);
+                if (stego_val != NULL) {
+                    spr_logf_to(logger, SPR_TRACE, "value: %s", stego_val);
+                    printf("Variable: %s_%s, Value: %s\n", key, inner_key, stego_val);
+                } else {
+                    spr_logf_to(logger, SPR_ERROR, "can't get value for inner key {%s} in table {%s}", inner_key, key);
+                }
+            } else if (inner_val.type == TOML_ARRAY) {
+                printf("Array: %s_%s, name: %s\n", key, inner_key, inner_key);
+                int inner_inner_array_len = inner_val.u.arr.size;
+                for (int k = 0; k < inner_inner_array_len; k++) {
+                    toml_datum_t inner_inner_val = inner_val.u.arr.elem[k];
+                    if (inner_inner_val.type == TOML_TABLE) {
+                        int inner_inner_table_len = inner_inner_val.u.tab.size;
+                        for (int y = 0; y < inner_inner_table_len; y++) {
+                            const char* inner_inner_key = inner_inner_val.u.tab.key[y];
+                            toml_datum_t inner_inner_inner_val = toml_get(inner_inner_val, inner_inner_key);
+                            if (inner_inner_inner_val.type == TOML_STRING) {
+                                const char* stego_val = inner_inner_inner_val.u.s;
+                                if (stego_val != NULL) {
+                                    spr_logf_to(logger, SPR_TRACE, "value: %s", stego_val);
+                                    printf("In-Arr Structvalue: %s_%s_%i[%s], Value: %s\n", key, inner_key, k, inner_inner_key, stego_val);
+                                } else {
+                                    spr_logf_to(logger, SPR_ERROR, "can't get value for inner_inner key {%s[%i]} in table {%s_%s}", inner_inner_key, k, key, inner_key);
+                                }
+                            } else if (inner_inner_inner_val.type == TOML_ARRAY) {
+                                int inner_inner_inner_array_len = inner_inner_inner_val.u.arr.size;
+                                for (int idx = 0; idx < inner_inner_inner_array_len; idx++) {
+                                    toml_datum_t inner_inner_inner_inner_val = inner_inner_inner_val.u.arr.elem[idx];
+                                    if (inner_inner_inner_inner_val.type == TOML_STRING) {
+                                        const char* stego_val = inner_inner_inner_inner_val.u.s;
+                                        if (stego_val != NULL) {
+                                            spr_logf_to(logger, SPR_TRACE, "value: %s", stego_val);
+                                            printf("In-Arr Structvalue: %s_%s_%i[%s_%i], Value: %s\n", key, inner_key, k, inner_inner_key, idx, stego_val);
+                                        } else {
+                                            spr_logf_to(logger, SPR_ERROR, "can't get value for inner_inner key {%s[%i]} in table {%s_%s}", inner_inner_key, k, key, inner_key);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else if (inner_inner_val.type == TOML_STRING) {
+                        const char* stego_val = inner_inner_val.u.s;
+                        if (stego_val != NULL) {
+                            spr_logf_to(logger, SPR_TRACE, "value: %s", stego_val);
+                            printf("Variable: %s_%s[%i], Value: %s\n", key, inner_key, k, stego_val);
+                        } else {
+                            spr_logf_to(logger, SPR_ERROR, "can't get value for inner key {%s[%i]} in table {%s}", inner_key, k, key);
+                        }
+                    }
+                }
             }
         }
         printf("------------------------\n");
