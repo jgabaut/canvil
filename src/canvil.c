@@ -30,7 +30,7 @@ void canvil_help(char* progname)
 {
     printf("canvil v%s\n", CANVIL_API_VERSION_STRING);
     printf("Usage: %s [OPTIONS] [TAG] [COMMAND]\n", progname);
-    printf("Commands:\n  test [-b|-l]                   Run all tests or the passed TESTNAME\n  build                          Tries building latest tag\n  init [-k <KERN>] [TEMPLATE]    Prepare a new anvil project\n  gen-c [DIRNAME] [TAG]          Generates C header + impl for supported project\n  version                        Prints canvil version\n  help                           Print this message or the help of the given subcommand(s)\nArguments:\n  [TAG]  Optional tag argument\n\n");
+    printf("Commands:\n  test [-b|-l]                   Run all tests or the passed TESTNAME\n  build                          Tries building latest tag\n  init [-k <KERN>] [TEMPLATE]    Prepare a new anvil project\n  gen-c [DIRNAME] [TAG]          Generates C header + impl for supported project\n  stego <MODE> <FILE>            Parses a stego file\n  version                        Prints canvil version\n  help                           Print this message or the help of the given subcommand(s)\nArguments:\n  [TAG]  Optional tag argument\n\n");
     printf("Example usage:  %s [(-I|-O|-D|-M|-S|-K|-E|-G|-C|-Z|-x|-V|-a|-k) <ARG>] [-TBtg] [-bripd] [-hvsqlLXWPJRFe] [TAG]\n", progname);
     printf("Options:\n  -D, --amboso-dir <BIN_DIR>         Specify the directory to host tags [default: ./bin]\n  -I, --builds-dir <BUILDS_DIR>      Specify the directory to host build [default: .]\n  -O, --stego-dir <STEGO_DIR>        Specify the directory to host stego.lock file [default: wd, BIN_DIR]\n  -K, --kazoj-dir <TESTS_DIR>        Specify the directory to host tests\n  -S, --source <SOURCE_NAME>         Specify the source name\n  -E, --execname <EXEC_NAME>         Specify the target executable name\n  -M, --maketag <MAKE_MINTAG>        Specify min tag using make as build/clean step\n  -a, --anvil-version <AMBOSO_VERS>  Specify amboso version to use\n  -k, --anvil-kern <AMBOSO_KERN>     Specify amboso kern to use\n  -G, --gen-c-header <C_HEADER_DIR>  Generate anvil C header for passed dir\n  -x, --linter <LINT_TARGET>         Act as stego linter for passed file\n  -T, --test                         Specify test mode\n  -B, --base                         Specify base mode\n  -g, --git                          Specify git mode\n  -t, --testmacro                    Specify test macro mode\n  -i, --init                         Build all tags for current mode\n  -p, --purge                        Delete binaries for all tags for current mode\n  -d, --delete                       Delete binary for passed tag\n  -b, --build                        Build binary for passed tag\n  -r, --run                          Run binary for passed tag\n  -l, --list                         Print supported tags for current mode\n  -L, --list-all                     Print supported tags for all modes\n  -q, --quiet                        Less output\n  -s, --silent                       Almost no output\n  -V, --verbose <VERBOSE>            More output [default: 3]\n  -w, --watch                        Report timer\n  -v, --version                      Print current version and quit\n  -W, --warranty                     Print warranty info and quit\n  -X, --no-gitcheck                  Ignore git mode checks\n  -J, --logged                       Output to log file\n  -P, --no-color                     Disable color output\n  -F, --force                        Enable force build\n  -R, --no-rebuild                   Disable calling make rebuild\n  -C, --config <CONFIG_ARG>          Pass configuration argument\n  -Z, --cflags <CFLAGS>              Pass CFLAGS for single file mode\n  -e, --strict                       Turn off extensions to 2.0\n  -h, --help                         Print help\n");
 }
@@ -853,6 +853,36 @@ int canvil_main(int argc, char** argv, Koliseo* default_kls)
                 return 1;
             }
             return 0;
+        } else if (!strcmp(argv[argc - count_args], "stego")) {
+            if (count_args > 2) {
+                const char* mode = argv[argc - count_args +1];
+                const char* file = argv[argc - count_args +2];
+                Canvil_Lint_Mode lint_mode = CANVIL_LINT_FULL_CHECK;
+                if (!strcmp(mode, "parse")) {
+                    lint_mode = CANVIL_LINT_FULL_CHECK;
+                    spr_logf_to(logger, SPR_DEBUG, "stego subcommand: doing full check on {%s}", file);
+                } else if (!strcmp(mode, "lex")) {
+                    lint_mode = CANVIL_LINT_LEX;
+                    spr_logf_to(logger, SPR_DEBUG, "stego subcommand: doing lex on {%s}", file);
+                } else if (!strcmp(mode, "lint")) {
+                    lint_mode = CANVIL_LINT_ONLY;
+                    spr_logf_to(logger, SPR_DEBUG, "stego subcommand: doing lint on {%s}", file);
+                } else {
+                    spr_logf_to(logger, SPR_ERROR, "Invalid mode for stego subcommand: {%s}", mode);
+
+                    spr_logf_to(logger, SPR_INFO, "Try one of these:\n  parse\n  lex\n  lint");
+                    canvil_report_elapsed(canvil_args.watch, timer, logger);
+                    return 1;
+                }
+                bool res = lint_stegopath(file, lint_mode, logger);
+                canvil_report_elapsed(canvil_args.watch, timer, logger);
+                if (res) return 0;
+                return 1;
+            } else {
+                spr_logf_to(logger, SPR_ERROR, "Missing arguments for stego subcommand");
+                canvil_report_elapsed(canvil_args.watch, timer, logger);
+                return 1;
+            }
         } else if (!strcmp(argv[argc - count_args], "version")) {
             printf("%s v%s\n", argv[0], CANVIL_API_VERSION_STRING);
             canvil_report_elapsed(canvil_args.watch, timer, logger);
@@ -959,7 +989,8 @@ int canvil_main(int argc, char** argv, Koliseo* default_kls)
                 const char* tagname = argv[argc - count_args +2];
                 bool gen_res = canvil_gen_header(dirname, canvil_args.anvil_kern_optarg, tagname, canvil_args.bin_optarg, logger, default_kls);
                 canvil_report_elapsed(canvil_args.watch, timer, logger);
-                return gen_res;
+                if (gen_res) return 0;
+                return 1;
             } else {
                 spr_logf_to(logger, SPR_ERROR, "Missing arguments for gen-c subcommand");
                 canvil_report_elapsed(canvil_args.watch, timer, logger);
