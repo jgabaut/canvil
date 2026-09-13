@@ -30,7 +30,7 @@ void canvil_help(char* progname)
 {
     printf("canvil v%s\n", CANVIL_API_VERSION_STRING);
     printf("Usage: %s [OPTIONS] [TAG] [COMMAND]\n", progname);
-    printf("Commands:\n  test [-b|-l]                   Run all tests or the passed TESTNAME\n  build                          Tries building latest tag\n  init [-k <KERN>] [TEMPLATE]    Prepare a new anvil project\n  delete <TAG>                   Deletes binary for a built tag\n  purge                          Deletes all binaries for built tags\n  cgen [DIRNAME] [TAG]           Generates C header + impl for supported project\n  stego <MODE> <FILE>            Parses a stego file\n  version                        Prints canvil version\n  help                           Print this message or the help of the given subcommand(s)\nArguments:\n  [TAG]  Optional tag argument\n\n");
+    printf("Commands:\n  test [-b|-l]                   Run all tests or the passed TESTNAME\n  build                          Tries building provided or latest tag\n  init [-k <KERN>] [TEMPLATE]    Prepare a new anvil project\n  delete <TAG>                   Deletes binary for a built tag\n  purge                          Deletes all binaries for built tags\n  cgen [DIRNAME] [TAG]           Generates C header + impl for supported project\n  stego <MODE> <FILE>            Parses a stego file\n  version                        Prints canvil version\n  help                           Print this message or the help of the given subcommand(s)\nArguments:\n  [TAG]  Optional tag argument\n\n");
     printf("Example usage:  %s [(-I|-O|-D|-M|-S|-K|-E|-G|-C|-Z|-x|-V|-a|-k) <ARG>] [-TBtg] [-bripd] [-hvsqlLXWPJRFe] [TAG]\n", progname);
     printf("Options:\n  -D, --amboso-dir <BIN_DIR>         Specify the directory to host tags [default: ./bin]\n  -I, --builds-dir <BUILDS_DIR>      Specify the directory to host build [default: .]\n  -O, --stego-dir <STEGO_DIR>        Specify the directory to host stego.lock file [default: wd, BIN_DIR]\n  -K, --kazoj-dir <TESTS_DIR>        Specify the directory to host tests\n  -S, --source <SOURCE_NAME>         Specify the source name\n  -E, --execname <EXEC_NAME>         Specify the target executable name\n  -M, --maketag <MAKE_MINTAG>        Specify min tag using make as build/clean step\n  -a, --anvil-version <AMBOSO_VERS>  Specify amboso version to use\n  -k, --anvil-kern <AMBOSO_KERN>     Specify amboso kern to use\n  -G, --gen-c-header <C_HEADER_DIR>  Generate anvil C header for passed dir\n  -x, --linter <LINT_TARGET>         Act as stego linter for passed file\n  -T, --test                         Specify test mode\n  -B, --base                         Specify base mode\n  -g, --git                          Specify git mode\n  -t, --testmacro                    Specify test macro mode\n  -i, --init                         Build all tags for current mode\n  -p, --purge                        Delete binaries for all tags for current mode\n  -d, --delete                       Delete binary for passed tag\n  -b, --build                        Build binary for passed tag\n  -r, --run                          Run binary for passed tag\n  -l, --list                         Print supported tags for current mode\n  -L, --list-all                     Print supported tags for all modes\n  -q, --quiet                        Less output\n  -s, --silent                       Almost no output\n  -V, --verbose <VERBOSE>            More output [default: 3]\n  -w, --watch                        Report timer\n  -v, --version                      Print current version and quit\n  -W, --warranty                     Print warranty info and quit\n  -X, --no-gitcheck                  Ignore git mode checks\n  -J, --logged                       Output to log file\n  -P, --no-color                     Disable color output\n  -F, --force                        Enable force build\n  -R, --no-rebuild                   Disable calling make rebuild\n  -C, --config <CONFIG_ARG>          Pass configuration argument\n  -Z, --cflags <CFLAGS>              Pass CFLAGS for single file mode\n  -e, --strict                       Turn off extensions to 2.0\n  -h, --help                         Print help\n");
 }
@@ -1104,32 +1104,59 @@ int canvil_main(int argc, char** argv, Koliseo* default_kls)
     //Build and delete subcommands - need Anvil_Env and setup of canvil_args
     if (count_args > 0) {
         if (!strcmp(argv[argc - count_args], "build")) {
-            Canvil_Tag* latest_tag = Canvil_Tag_List_head(anvil_env.git_tags);
-            char latest_tag_str[FILENAME_MAX] = {0};
-            sprintf(latest_tag_str, "%i.%i.%i", latest_tag->version->major, latest_tag->version->minor, latest_tag->version->patch);
+            if (count_args > 1) {
+                int tag_major, tag_minor, tag_patch;
+                const char* tagname = argv[argc - count_args +1];
+                parseSemVer(tagname, &tag_major, &tag_minor, &tag_patch);
+                SemVer tag = { .major = tag_major, .minor = tag_minor, .patch = tag_patch };
+                if (!strcmp(canvil_args.anvil_kern_optarg, "custom")) {
+                    int major, minor, patch;
 
-            spr_logf_to(logger, SPR_INFO, "Building latest tag: {%s}", latest_tag_str);
-            if (!strcmp(canvil_args.anvil_kern_optarg, "custom")) {
-                int major, minor, patch;
-
-                parseSemVer(canvil_args.anvil_version_optarg, &major, &minor, &patch);
-                SemVer target = { .major = major, .minor = minor, .patch = patch };
-                if (canvil_SemVer_cmp(target, MIN_AMBOSO_V_ANVILCUSTOM_RECIPES) >= 0) {
-                    Anvil_Recipe r = {0};
-                    if (!find_recipe(anvil_env.recipes, *(latest_tag->version), &r)) {
-                        spr_logf_to(logger, SPR_ERROR, "Could not find recipe for {%s}", latest_tag_str);
-                        return 1;
+                    parseSemVer(canvil_args.anvil_version_optarg, &major, &minor, &patch);
+                    SemVer target = { .major = major, .minor = minor, .patch = patch };
+                    if (canvil_SemVer_cmp(target, MIN_AMBOSO_V_ANVILCUSTOM_RECIPES) >= 0) {
+                        Anvil_Recipe r = {0};
+                        if (!find_recipe(anvil_env.recipes, tag, &r)) {
+                            spr_logf_to(logger, SPR_ERROR, "Could not find recipe for {%s}", tagname);
+                            return 1;
+                        }
+                        spr_logf_to(logger, SPR_DEBUG, "Using custom builder {%s}", r.build);
+                        canvil_args.anvil_custombuilder = r.build;
                     }
-                    spr_logf_to(logger, SPR_DEBUG, "Using custom builder {%s}", r.build);
-                    canvil_args.anvil_custombuilder = r.build;
                 }
+                bool build_res = canvil_op_build((canvil_args.git_mode == 1), (canvil_args.force_build == 1), (canvil_args.no_rebuild == 1), (canvil_args.passed_config_arg == 1), (canvil_args.config_optarg), canvil_args.minmake_optarg, canvil_args.minautomake_version, canvil_args.cflags_optarg, canvil_args.targetdir_optarg, canvil_args.builds_dir_optarg, tagname, canvil_args.bin_optarg, canvil_args.source_optarg, canvil_args.anvil_kern_optarg, canvil_args.anvil_version_optarg, canvil_py_env, anvil_env, canvil_args.anvil_custombuilder, canvil_args.extra_args, canvil_args.extra_args_len, logger, default_kls);
+                canvil_report_elapsed(canvil_args.watch, timer, logger);
+
+                if (build_res) return 0;
+                return 1;
+            } else {
+                Canvil_Tag* latest_tag = Canvil_Tag_List_head(anvil_env.git_tags);
+                char latest_tag_str[FILENAME_MAX] = {0};
+                sprintf(latest_tag_str, "%i.%i.%i", latest_tag->version->major, latest_tag->version->minor, latest_tag->version->patch);
+
+                spr_logf_to(logger, SPR_INFO, "Building latest tag: {%s}", latest_tag_str);
+                if (!strcmp(canvil_args.anvil_kern_optarg, "custom")) {
+                    int major, minor, patch;
+
+                    parseSemVer(canvil_args.anvil_version_optarg, &major, &minor, &patch);
+                    SemVer target = { .major = major, .minor = minor, .patch = patch };
+                    if (canvil_SemVer_cmp(target, MIN_AMBOSO_V_ANVILCUSTOM_RECIPES) >= 0) {
+                        Anvil_Recipe r = {0};
+                        if (!find_recipe(anvil_env.recipes, *(latest_tag->version), &r)) {
+                            spr_logf_to(logger, SPR_ERROR, "Could not find recipe for {%s}", latest_tag_str);
+                            return 1;
+                        }
+                        spr_logf_to(logger, SPR_DEBUG, "Using custom builder {%s}", r.build);
+                        canvil_args.anvil_custombuilder = r.build;
+                    }
+                }
+
+                bool build_res = canvil_op_build((canvil_args.git_mode == 1), (canvil_args.force_build == 1), (canvil_args.no_rebuild == 1), (canvil_args.passed_config_arg == 1), (canvil_args.config_optarg), canvil_args.minmake_optarg, canvil_args.minautomake_version, canvil_args.cflags_optarg, canvil_args.targetdir_optarg, canvil_args.builds_dir_optarg, latest_tag_str, canvil_args.bin_optarg, canvil_args.source_optarg, canvil_args.anvil_kern_optarg, canvil_args.anvil_version_optarg, canvil_py_env, anvil_env, canvil_args.anvil_custombuilder, canvil_args.extra_args, canvil_args.extra_args_len, logger, default_kls);
+                canvil_report_elapsed(canvil_args.watch, timer, logger);
+
+                if (build_res) return 0;
+                return 1;
             }
-
-            bool build_res = canvil_op_build((canvil_args.git_mode == 1), (canvil_args.force_build == 1), (canvil_args.no_rebuild == 1), (canvil_args.passed_config_arg == 1), (canvil_args.config_optarg), canvil_args.minmake_optarg, canvil_args.minautomake_version, canvil_args.cflags_optarg, canvil_args.targetdir_optarg, canvil_args.builds_dir_optarg, latest_tag_str, canvil_args.bin_optarg, canvil_args.source_optarg, canvil_args.anvil_kern_optarg, canvil_args.anvil_version_optarg, canvil_py_env, anvil_env, canvil_args.anvil_custombuilder, canvil_args.extra_args, canvil_args.extra_args_len, logger, default_kls);
-            canvil_report_elapsed(canvil_args.watch, timer, logger);
-
-            if (build_res) return 0;
-            return 1;
         } else if (!strcmp(argv[argc - count_args], "delete")) {
             if (count_args > 1) {
                 const char* tagname = argv[argc - count_args +1];
